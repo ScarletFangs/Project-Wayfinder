@@ -1,1 +1,1 @@
-# ProjectWaveFinder
+# ProjectWayFinder
