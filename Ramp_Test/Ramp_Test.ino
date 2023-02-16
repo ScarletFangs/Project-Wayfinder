@@ -23,8 +23,8 @@ unsigned long RAMP_CURRENT_TIME = 0; // current ramp time
 void SetVelocity(int target_velocity, long time_interval){
   // Using a timer to set velocity gradually
   RAMP_CURRENT_TIME = millis(); // start timer in milliseconds
-  if(VELOCITY < target_velocity){ // if wanting to speed up
-    if(RAMP_CURRENT_TIME == time_interval){
+  if(VELOCITY < target_velocity){
+    if(RAMP_CURRENT_TIME > time_interval){
       // if time interval has been reached
       Serial.print("Speeding Up: ");
       Serial.println(VELOCITY);
@@ -37,12 +37,12 @@ void SetVelocity(int target_velocity, long time_interval){
       Serial.println(RAMP_CURRENT_TIME);
     }
   }
-  else{ // if wanting to slow down
-    if(RAMP_CURRENT_TIME == time_interval){
+  else{
+    if(RAMP_CURRENT_TIME > time_interval){
       // if time interval has been reached
       Serial.print("Slowing Down: ");
       Serial.println(VELOCITY);
-      VELOCITY--; // increase velocity
+      VELOCITY--; // decrease velocity
       ESC_MOTOR.write(VELOCITY); // send velocity value to motor
       RAMP_CURRENT_TIME = RAMP_START_TIME; // restart timer
     }
