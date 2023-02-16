@@ -22,6 +22,11 @@ void GPSUpdate(float initial_lat, float initial_long, float final_lat, float fin
    */
   // CONST: Do not allow this variable to be changed by anything
   const double R = 6371e3; // meters --> radius of the earth (assumed spherical geometry)
+  initial_lat = initial_lat * M_PI / 180;
+  initial_long = initial_long * M_PI / 180;
+  final_lat = final_lat * M_PI / 180;
+  final_long = final_long * M_PI / 180;
+  
   LAT_DIFF = final_lat - initial_lat; // Difference between latitudes of two points
   LONG_DIFF = final_long - initial_long; // Difference between longitudes of two points
 
@@ -35,6 +40,8 @@ void GPSUpdate(float initial_lat, float initial_long, float final_lat, float fin
   // Calculate the target heading for the rover to turn to based on target GPS coordinates
   TARGET_HEADING = atan2(sin(LONG_DIFF)*cos(final_lat), 
   (cos(initial_lat)*sin(final_lat)) - (sin(initial_lat)*cos(final_lat)*cos(LONG_DIFF)));
+
+  TARGET_HEADING = TARGET_HEADING * 180 / M_PI;
  }
 
  // On-board LED to know when program has been successfully downloaded to board
