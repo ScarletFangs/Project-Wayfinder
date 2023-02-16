@@ -1,1 +1,1 @@
-# ProjectWayFinder
+# ProjectWayfinder
