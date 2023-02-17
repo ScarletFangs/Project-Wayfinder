@@ -3,6 +3,7 @@
  */
 /*----------------------------------------------------------------------------------------------------------------------*/
 #include <Servo.h>
+#include <SafeString.h> // millisDelay() included in here
 // Drive motor and steering servo variables
 volatile int VELOCITY = 90; // declare VELOCITY as global to keep track of speed between function calls
 Servo ESC_MOTOR; // initialize ESC_MOTOR as a Servo object --> on pin 8
@@ -16,21 +17,20 @@ Servo TURN_SERVO; // initialize TURN_SERVO as a Servo object --> on pin 9
 * 180 == full speed forwards
 */
 
-unsigned long RAMP_START_TIME = 0; // starting ramp time
-unsigned long RAMP_CURRENT_TIME = 0; // current ramp time
+millisDelay RAMP_DELAY; // create millisDelay object for non-blocking timer
 
 /*----------------------------------------------------------------------------------------------------------------------*/
 void SetVelocity(int target_velocity, long time_interval){
   // Using a timer to set velocity gradually
-  RAMP_CURRENT_TIME = millis(); // start timer in milliseconds
+  RAMP_DELAY.start(time_interval); // start a user defined timer in milliseconds
   if(VELOCITY < target_velocity){
-    if(RAMP_CURRENT_TIME > time_interval){
+    if(RAMP_DELAY.justFinished()){
       // if time interval has been reached
       Serial.print("Speeding Up: ");
       Serial.println(VELOCITY);
       VELOCITY++; // increase velocity
       ESC_MOTOR.write(VELOCITY); // send velocity value to motor
-      RAMP_CURRENT_TIME = RAMP_START_TIME; // restart timer
+      RAMP_DELAY.start(time_interval); // restart timer
     }
     else{
       Serial.print("Check 1: ");
@@ -38,16 +38,17 @@ void SetVelocity(int target_velocity, long time_interval){
     }
   }
   else{
-    if(RAMP_CURRENT_TIME > time_interval){
+    if(RAMP_DELAY.justFinished()){
       // if time interval has been reached
       Serial.print("Slowing Down: ");
       Serial.println(VELOCITY);
       VELOCITY--; // decrease velocity
       ESC_MOTOR.write(VELOCITY); // send velocity value to motor
-      RAMP_CURRENT_TIME = RAMP_START_TIME; // restart timer
+      RAMP_DELAY.start(time_interval); // restart timer
     }
     else{
-      Serial.println("Check 2");
+      Serial.print("Check 2: ");
+      Serial.println(RAMP_CURRENT_TIME);
     }
   }
 }
