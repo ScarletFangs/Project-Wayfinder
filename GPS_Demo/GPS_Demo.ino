@@ -15,6 +15,8 @@ volatile float A = 0; // initialize argument of the square root
 volatile float C = 0; // initialize arctangent term
 volatile float DISTANCE = 0; // initialize final distance variable
 volatile float TARGET_HEADING = 0; // initialize target heading
+volatile float ANGLE_PROVISIONAL = 0// initialize angle provisional
+volatile float ANGLE_TURN = 0// initialize angle provisional
 /*
  * VOLATILE FLOAT --> changing number with a lot of decimal points
  * CONST DOUBLE --> unchanging number of double variable type
