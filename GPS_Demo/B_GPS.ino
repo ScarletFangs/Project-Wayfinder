@@ -46,6 +46,21 @@ void GPSUpdate(float initial_lat, float initial_long, float final_lat, float fin
   TARGET_HEADING = TARGET_HEADING * 180 / M_PI; // Convert target heading from radians to degrees
  }
 
+void AngleProvisional(float target_heading, float current_heading){ //function to determine Turning Angle
+  
+  ANGLE_PROVISIONAL = target_heading - current_heading; //Take the difference of target heading and current heading
+
+  if (ANGLE_PROVISIONAL <= 180 & ANGLE_PROVISIONAL>-180){ 
+      ANGLE_TURN = ANGLE_PROVISIONAL;
+  }else if (ANGLE_PROVISIONAL>180){
+      ANGLE_TURN = ANGLE_PROVISIONAL-360;
+  }else(ANGLE_PROVISIONAL<=-180){
+      ANGLE_TURN = ANGLE_PROVISIONAL+360;
+  }
+  
+}
+
+}
  void TurnToHeading(){
   // Uses GPSUpdate() to turn rover towards a desired heading
   
@@ -55,4 +70,6 @@ void GPSUpdate(float initial_lat, float initial_long, float final_lat, float fin
   
   GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // Calculate the target distance and heading from current coordinates and target coordinates
 
+  AngleProvisional(TARGET_HEADING, CURRRENT_HEADING); //Calculate turning angle by using current Target heading and current heading
+  
  }
