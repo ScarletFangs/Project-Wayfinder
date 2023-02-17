@@ -46,7 +46,7 @@ void GPSUpdate(float initial_lat, float initial_long, float final_lat, float fin
   TARGET_HEADING = TARGET_HEADING * 180 / M_PI; // Convert target heading from radians to degrees
  }
 
-void AngleProvisional(float target_heading, float current_heading){ //function to determine Turning Angle
+void TurningAngle(float target_heading, float current_heading){ //function to determine Turning Angle
   
   ANGLE_PROVISIONAL = target_heading - current_heading; //Take the difference of target heading and current heading
 
@@ -60,6 +60,88 @@ void AngleProvisional(float target_heading, float current_heading){ //function t
   
 }
 
+void SetVelocity(int target_velocity, long time_interval){
+  // Using a timer to set velocity gradually
+
+  if(CHECK == 0){
+    VELOCITY_TIMER.start(time_interval);
+    CHECK++;
+  }
+  else if(CHECK == 1){
+    VELOCITY_TIMER.start(REMAINING_VELOCITY_TIME);
+  }
+  
+  //Serial.print("Initial Timer Check: ");
+  //Serial.println(VELOCITY_TIMER.delay());
+  if(VELOCITY < target_velocity){
+    if(VELOCITY_TIMER.delay() < time_interval / 4){
+      // if time interval has been reached
+      Serial.print("Speeding Up: ");
+      Serial.println(VELOCITY);
+      VELOCITY++; // increase velocity
+      ESC_MOTOR.write(VELOCITY); // send velocity value to motor
+      CHECK = 0;
+    }
+    else{
+      //Serial.print("Check 1: ");
+      //Serial.println(VELOCITY_TIMER.delay());
+    }
+  }
+  else if(VELOCITY == target_velocity){
+    CHECK = 2;
+    Serial.print("Velocity Set: ");
+    Serial.println(VELOCITY);
+    return 0;
+  }
+  else{
+    if(VELOCITY_TIMER.delay() < time_interval / 4){
+      // if time interval has been reached
+      Serial.print("Slowing Down: ");
+      Serial.println(VELOCITY);
+      VELOCITY--; // decrease velocity
+      ESC_MOTOR.write(VELOCITY); // send velocity value to motor
+      CHECK = 0;
+    }
+    else{
+      //Serial.print("Check 2: ");
+      //Serial.println(VELOCITY_TIMER.delay());
+    }
+  }
+  REMAINING_VELOCITY_TIME = VELOCITY_TIMER.remaining();
+  VELOCITY_TIMER.stop();
+}
+
+/* MOTOR SPEEDS AND DIRECTIONS BASED OFF PULSE WIDTH MODULATION VALUES
+* 0 <= speed <= 90 == reverse direction for motors
+* 90 <= speed <= 180 == forward direction for motors
+* 90 == stop motors
+* 0 == full speed in reverse
+* 180 == full speed forwards
+*/
+void TurnLeft(int speed_, long timer){ // takes in speed for direction and timer for duration
+  if (speed_ <= 180 & speed_ >= 90){ //if forward turn wheels 
+    TURN_SERVO.write(180);
+    SetVelocity(int speed_, long timer);
+  }else {
+      TURN_SERVO.write(0);
+      SetVelocity(int speed_, long timer);
+  }
+}
+
+void TurnRight(int speed_, long timer){ // takes in speed for direction and timer for duration
+  if (speed_ <= 180 & speed_ >= 90){ //if forward turn wheels 
+    TURN_SERVO.write(0)
+    SetVelocity(int speed_, long timer)
+  }else {
+      TURN_SERVO.write(180);
+      SetVelocity(int speed_, long timer);
+  }
+}
+
+void StopRover(){
+   ESC_MOTOR.write(90); // stop
+}
+
 }
  void TurnToHeading(){
   // Uses GPSUpdate() to turn rover towards a desired heading
@@ -70,6 +152,19 @@ void AngleProvisional(float target_heading, float current_heading){ //function t
   
   GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // Calculate the target distance and heading from current coordinates and target coordinates
 
-  AngleProvisional(TARGET_HEADING, CURRRENT_HEADING); //Calculate turning angle by using current Target heading and current heading
+  TurningAngle(TARGET_HEADING, CURRRENT_HEADING); //Calculate turning angle by using current Target heading and current heading
+
+  if (ANGLE_TURN > 0){
+   do {
+    TurnRight(int 100, long 100);
+   }
+   while(abs(CURRENT_HEADING-TARGET_HEADING)>=10);
+  }else{
+    do {
+        TurnLeft(int 100, long 100);
+    }
+    while(abs(CURRENT_HEADING-TARGET_HEADING)>=10);
+  }
+  
   
  }
