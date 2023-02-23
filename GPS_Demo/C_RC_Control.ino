@@ -7,24 +7,24 @@ void RCRead() {
   if(THROTTLE_PULSE < 2200){
     THROTTLE_PW = THROTTLE_PULSE;
   }
-  //Serial.print("Throttle: ");
-  //Serial.println(THROTTLE_PW); // print throttle value
+//  Serial.print("Throttle: ");
+//  Serial.println(THROTTLE_PULSE); // print throttle value
 
   if(STEERING_PULSE < 2200){
     STEERING_PW = STEERING_PULSE;
   }
-  //Serial.print("Steering: ");
-  //Serial.println(STEERING_PW); // print steering value
+//  Serial.print("Steering: ");
+//  Serial.println(STEERING_PW); // print steering value
 }
 void RCDrive() {
   // pass values from RCRead() to throttle and steering servo
   RCRead();
-  THROTTLE_VALUE = map(THROTTLE_PW, 1020, 1860, 0, 180); // map RC throttle values to 0-180
-  // Serial.println(THROTTLE_VALUE);
+  THROTTLE_VALUE = map(THROTTLE_PW, 1150, 1960, 0, 180); // map RC throttle values to 0-180
+  //Serial.println(THROTTLE_VALUE);
   ESC_MOTOR.write(THROTTLE_VALUE); // write mapped values to motor esc
 
-  STEERING_VALUE = map(STEERING_PW, 959, 1890, 0, 180); // map RC steering values to 0-180
-  // Serial.println(STEERING_VALUE);
+  STEERING_VALUE = map(STEERING_PW, 1075, 1750, 0, 180); // map RC steering values to 0-180
+  //Serial.println(STEERING_VALUE);
   TURN_SERVO.write(STEERING_VALUE); // write mapped values to turning servo
 }
 
@@ -39,9 +39,9 @@ void DeadManSwitch() { // Auton|RC Control toggle function
     Serial.println("RC Control");
   }
   else{ // if bottom button is pressed, use autonomous routine
-    TurnToHeading(); // Use GPS correction
-    //LimitSwitchCollision(); // if limit switch is triggered, interrupt drive forward and do collision response
-    //UltrasonicCollision(); // if sonar is triggered, interrupt drive forward and do collision response
+    TurnToHeading(); // Use GPS navigation
+    //LimitSwitchCollision(); // if limit switch is triggered, interrupt navigation and do collision response
+    //UltrasonicCollision(); // if sonar is triggered, interrupt navigation and do collision response
     Serial.println("Autonomous");
   }
 }
