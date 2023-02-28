@@ -13,7 +13,7 @@ void CurrentCoordinates(){
 
     String inputString = data;
         
-    //Serial.print(inputString);
+    //Serial.println(inputString);
     inputString.remove(12,1);
     int index1 = inputString.indexOf(",N"); // Find the index of "N"
     int index2 = inputString.indexOf(",W"); // Find the index of "W"
@@ -21,11 +21,20 @@ void CurrentCoordinates(){
     // Extract the latitude value and convert it to a float
     String latString = inputString.substring(index1-10, index1);
     //Serial.println(latString);
-    CURRENT_LAT = atof(latString.c_str()) / 100;
+    double temp_lat = atof(latString.c_str()) / 100;
+    if(temp_lat > 1.0){
+      CURRENT_LAT = temp_lat; // update CURRENT_LAT only if given good data
+    }
+    
     // Extract the longitude value and convert it to a float
     String lonString = inputString.substring(index2-11, index2);
-    CURRENT_LONG = -1 * atof(lonString.c_str()) / 100;
-    //Serial.println(CURRENT_LONG, 7);
+    Serial.println(lonString);
+    //Serial.println();
+    
+    double temp_long = -1 * atof(lonString.c_str()) / 100;
+    if(temp_long > 1.0){
+      CURRENT_LONG = temp_long; // update CURRENT_LONG only if given good data
+    }
   }
 }
 
@@ -143,17 +152,11 @@ void TurnLeft(int motor_speed, long timer){ // takes in speed for direction and 
   }
   
   if (motor_speed <= 180 && motor_speed >= 90){ //if forward turn wheels 
-    //Serial.print("Turn Servo Angle: ");
-    //Serial.println(90 - temp_turn_angle);
     TURN_SERVO.write(90 - temp_turn_angle); // proportional turn between 0-90
-    //SetVelocity(speed_, timer); // set velocity using ramping function
     ESC_MOTOR.write(motor_speed); // forward slow
   }else {
-    //Serial.print("Turn Servo Angle: ");
-    //Serial.println(90 + temp_turn_angle);
     TURN_SERVO.write(90 + temp_turn_angle); // proportional turn between 90-180
-    //SetVelocity(speed_, timer); // set velocity using ramping function
-    ESC_MOTOR.write(motor_speed); // reverse slow
+    ESC_MOTOR.write(90); // reverse slow
     ESC_MOTOR.write(motor_speed);
   }
 }
@@ -167,17 +170,11 @@ void TurnRight(int motor_speed, long timer){ // takes in speed for direction and
   }
   
   if (motor_speed <= 180 && motor_speed >= 90){ //if forward turn wheels 
-    //Serial.print("Turn Servo Angle: ");
-    //Serial.println(90 + temp_turn_angle);
     TURN_SERVO.write(90 + temp_turn_angle); // proportional turn between 90-180
-    //SetVelocity(speed_, timer); // set velocity using ramping function
     ESC_MOTOR.write(motor_speed); // forward slow
   }else {
-    //Serial.print("Turn Servo Angle: ");
-    //Serial.println(90 - temp_turn_angle);
     TURN_SERVO.write(90 - temp_turn_angle); // proportional turn between 0-90
-    //SetVelocity(110, timer); // set velocity using ramping function
-    ESC_MOTOR.write(motor_speed); // reverse slow
+    ESC_MOTOR.write(90); // reverse slow
     ESC_MOTOR.write(motor_speed);
   }
 }
@@ -196,11 +193,14 @@ void TurnToHeading(int motor_speed, int error_margin){
   if (ANGLE_TURN > 0){ // if target heading is to the right of the current heading
    while(abs(CURRENT_HEADING-TARGET_HEADING) >= error_margin){ // turn right while turn angle difference is greater than ERROR_MARGIN
       CurrentHeading(); // update current heading of the rover
+      BluetoothTelemetry();
+      Serial.print("Loop R-Current Latitude: ");
+      Serial.println(CURRENT_LAT);
       Serial.println("TurnToHeading()");
       Serial.print("Loop R-Current Heading: ");
       Serial.println(CURRENT_HEADING);
       Serial.print("Loop R-Target Heading: ");
-      Serial.println(TARGET_HEADING, 12);
+      Serial.println(TARGET_HEADING);
       Serial.print("Loop R-Angle Difference: ");
       Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
       Serial.println();
@@ -208,22 +208,26 @@ void TurnToHeading(int motor_speed, int error_margin){
    }
   }else{ // if target heading is to the left of current heading
     while(abs(CURRENT_HEADING-TARGET_HEADING) >= error_margin){ // turn left while angle difference is greater than ERROR_MARGIN
-        CurrentHeading(); // update current heading of the rover
-        Serial.println("TurnToHeading()");
-        Serial.print("Loop L-Current Heading: ");
-        Serial.println(CURRENT_HEADING);
-        Serial.print("Loop L-Target Heading: ");
-        Serial.println(TARGET_HEADING, 12);
-        Serial.print("Loop L-Angle Difference: ");
-        Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
-        Serial.println();
-        TurnLeft(motor_speed, 100); // TurnLeft(speed, duration for SetVelocity())
+      CurrentHeading(); // update current heading of the rover
+      BluetoothTelemetry();
+      Serial.print("Loop L-Current Latitude: ");
+      Serial.println(CURRENT_LAT);
+      Serial.println("TurnToHeading()");
+      Serial.print("Loop L-Current Heading: ");
+      Serial.println(CURRENT_HEADING);
+      Serial.print("Loop L-Target Heading: ");
+      Serial.println(TARGET_HEADING);
+      Serial.print("Loop L-Angle Difference: ");
+      Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
+      Serial.println();
+      TurnLeft(motor_speed, 100); // TurnLeft(speed, duration for SetVelocity())
     } 
   }
 }
 
 void HeadingHold(int motor_speed, int distance_threshold){
   // Drive straight using compass to course correct
+  
   CurrentCoordinates(); // get current rover GPS coordinates
   CurrentHeading(); // get current compass bearing of the rover
   GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // update DISTANCE and TARGET_HEADING
@@ -244,12 +248,14 @@ void HeadingHold(int motor_speed, int distance_threshold){
       }else if(temp_turn_value > 180){ // if temp_turn_value is greater than 180
         temp_turn_value = temp_turn_value % 180; // cap temp_turn_value at 180
       }
-      //BluetoothTelemetry(); // print to bluetooth device --> 50ms blocking delay
+      BluetoothTelemetry(); // print to bluetooth device --> 50ms blocking delay
+      Serial.print("Loop S-Current Latitude: ");
+      Serial.println(CURRENT_LAT);
       Serial.println("HeadingHold()");
       Serial.print("Loop S-Current Heading: ");
       Serial.println(CURRENT_HEADING);
       Serial.print("Loop S-Target Heading: ");
-      Serial.println(TARGET_HEADING, 12);
+      Serial.println(TARGET_HEADING);
       Serial.print("Loop S-Angle Difference: ");
       Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
       Serial.print("Loop S-Turn Servo Angle: ");
@@ -259,16 +265,16 @@ void HeadingHold(int motor_speed, int distance_threshold){
     }// END WHILE LOOP
 }
 
-void GPSNavigation(int error_boundary){
+void GPSNavigation(int angle_boundary){
   // Combine navigational functions into one function
   CurrentCoordinates(); // get current rover GPS coordinates
   CurrentHeading(); // get current compass bearing of the rover
   GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // update DISTANCE and TARGET_HEADING
-  if(abs(CURRENT_HEADING - TARGET_HEADING) < error_boundary){ // if within heading_error degrees of target heading, use HeadingHold() function
-    HeadingHold(120, error_boundary); // drive straight towards target 
+  if(abs(CURRENT_HEADING - TARGET_HEADING) <= angle_boundary){ // if within heading_error degrees of target heading, use HeadingHold() function
+    HeadingHold(120, angle_boundary); // drive straight towards target 
   }
-  else if(abs(CURRENT_HEADING - TARGET_HEADING) >= error_boundary){ // if more than turn_error degrees of difference from target heading, use TurnToHeading() function
-    TurnToHeading(70, error_boundary); // turn rover towards target
+  else if(abs(CURRENT_HEADING - TARGET_HEADING) > angle_boundary){ // if more than turn_error degrees of difference from target heading, use TurnToHeading() function
+    TurnToHeading(110, angle_boundary); // turn rover towards target
   }
   
 }

@@ -11,6 +11,7 @@ void BluetoothTelemetry(){
     Serial8.println(CURRENT_LONG, 15);
     Serial8.println();
     delay(50);
+    digitalWrite(13, LOW); // turn on light to ensure board is working
 
 
   

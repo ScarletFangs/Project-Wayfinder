@@ -21,9 +21,9 @@ IntervalTimer MY_TIMER_2; // timer that uses pin 11
 // GPS and Compass variables
 LSM303 COMPASS; // initialize an LSM303 compass object
 
-volatile double CURRENT_LAT = 0; // initialize current latitude
-volatile double CURRENT_LONG = 0; // initialize current longitude
-volatile double CURRENT_HEADING = 0;
+static double CURRENT_LAT = 0; // initialize current latitude
+static double CURRENT_LONG = 0; // initialize current longitude
+volatile double CURRENT_HEADING = 0; // initialize current heading of rover
 volatile double LAT_DIFF = 0; // initialize latitude difference variable
 volatile double LONG_DIFF = 0; // initialize longitude difference variable
 volatile double TARGET_LAT = 34.0277013; // initialize target latitude
@@ -104,6 +104,12 @@ void setup() {
 void loop() {
   
   //DeadManSwitch(); // toggle between autonomous control and RC control
-
-  GPSNavigation(30); // GPSNavigation(int error boundary to decide when to switch between HeadingHold() and TurnToHeading())
+  //ESC_MOTOR.write(120);
+  CurrentCoordinates();
+  if(CURRENT_LAT < 1.0){
+    Serial.println("GPS Lock Lost"); 
+  }
+  else{
+   GPSNavigation(30); // GPSNavigation(int error boundary to decide when to switch between HeadingHold() and TurnToHeading())  
+  }
 }
