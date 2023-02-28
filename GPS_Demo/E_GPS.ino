@@ -32,7 +32,7 @@ void CurrentCoordinates(){
     //Serial.println();
     
     double temp_long = -1 * atof(lonString.c_str()) / 100;
-    if(temp_long > 1.0){
+    if(abs(temp_long) > 1.0){
       CURRENT_LONG = temp_long; // update CURRENT_LONG only if given good data
     }
   }
