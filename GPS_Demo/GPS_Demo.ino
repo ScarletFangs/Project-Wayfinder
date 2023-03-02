@@ -1,11 +1,24 @@
 /*
- * GPS Navigation Test File
+ * GPS Navigation test file designed to navigate the rover to a waypoint using the GPS module & compass as the sole 
+ * means of navigation. Obstacle avoidance functions have been included for use with RCDrive() only. Also includes 
+ * telemetry through the means of a bluetooth module communicating with a cellphone. 
  */
 #include <LSM303.h> // include compass library
 #include <Wire.h> // include I2C library
 #include <Servo.h> // include servo/motor library
 #include <millisDelay.h> // include delay timer library (from SafeString library)
 #include <SoftwareSerial.h> // include software serial library
+/*----------------------------------------------------------------------------------------------------------------------*/
+// VARIABLE TYPES AND THEIR MEANINGS
+
+/*
+ * VOLATILE --> let program know that this variable will change and to not try to skip over it
+ * STATIC --> maintain variable value between function calls
+ * CONST --> read-only variable that cannot be changed after intialization
+ * DOUBLE --> floating-point type of up to 15 decimal precision
+ * FLOAT --> foating-point type of up to 7 decimal precision
+ */
+ 
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit Switch variables
 #define REAR_LIMIT_SWITCH 5 // initialize rear limit switch to pin 5
@@ -15,29 +28,25 @@
 // Ultrasonic variables
 #define TRIG_PIN 22 // Trigger Pin of Ultrasonic Sensor to pin 22
 #define ECHO_PIN 23 // Echo Pin of Ultrasonic Sensor to pin 23
-IntervalTimer MY_TIMER_1; // timer that uses pin 10
-IntervalTimer MY_TIMER_2; // timer that uses pin 11
+IntervalTimer MY_TIMER_1; // declare timer that uses pin 10
+IntervalTimer MY_TIMER_2; // declare timer that uses pin 11
 /*----------------------------------------------------------------------------------------------------------------------*/
 // GPS and Compass variables
-LSM303 COMPASS; // initialize an LSM303 compass object
+LSM303 COMPASS; // declare an LSM303 compass object
 
-static double CURRENT_LAT = 0; // initialize current latitude
-static double CURRENT_LONG = 0; // initialize current longitude
-volatile double CURRENT_HEADING = 0; // initialize current heading of rover
-volatile double LAT_DIFF = 0; // initialize latitude difference variable
-volatile double LONG_DIFF = 0; // initialize longitude difference variable
-volatile double TARGET_LAT = 34.0277013; // initialize target latitude
-volatile double TARGET_LONG = -117.504342; // initialize target longitude
-volatile double A = 0; // initialize argument of the square root
-volatile double C = 0; // initialize arctangent term
-volatile double DISTANCE = 21; // initialize final distance variable
-volatile double TARGET_HEADING = 0; // initialize target heading
-volatile float ANGLE_PROVISIONAL = 0; // initialize angle provisional
-volatile float ANGLE_TURN = 0; // initialize angle provisional
-/*
- * VOLATILE DOUBLE --> changing number of up to 15 decimal precision
- * VOLATILE FLOAT --> changing number of up to 7 decimal precision
- */
+static double CURRENT_LAT = 0; // initialize current latitude to 0
+static double CURRENT_LONG = 0; // initialize current longitude to 0
+volatile double CURRENT_HEADING = 0; // initialize current heading of rover to 0 (Direct North)
+volatile double TARGET_LAT = 0; // initialize target latitude to 0
+volatile double TARGET_LONG = 0; // initialize target longitude to 0
+volatile double DISTANCE = 21; // initialize final distance variable to 21
+volatile double TARGET_HEADING = 0; // initialize target heading to 0
+volatile float ANGLE_TURN = 0; // initialize angle provisional to 0
+
+// Initialize the array of target coordinates with 0 = intermediate waypoint and 1 = cone location
+const float WAYPOINT_ARRAY[3][3] = {{34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 1}};
+int ROWS = sizeof(WAYPOINT_ARRAY) / sizeof(WAYPOINT_ARRAY[0]); // number of rows in WAYPOINT_ARRAY
+int COLS = sizeof(WAYPOINT_ARRAY[0]) / sizeof(WAYPOINT_ARRAY[0][0]); // number of columns in WAYPOINT_ARRAY
 /*----------------------------------------------------------------------------------------------------------------------*/
 // RC controller variables
 #define THROTTLE_PIN 2 // initialize throttle pin
@@ -55,31 +64,20 @@ int STEERING_PW = 0; // initialize steering pulse width updater
 int STEERING_VALUE = 0; // initialize steering servo value
 
 #define DEAD_MAN_PIN 4 // initialize RC dead man switch pin
-volatile long DEAD_MAN_VALUE; // initialize value read from RC dead man buttons
-
-/*
- * VOLATILE LONG --> let program know that this variable will change and to not try to skip over it
- */
+volatile long DEAD_MAN_VALUE; // declare value read from RC dead man buttons
+bool RC_CONTROL = true; // initialize RC_CONTROL boolean variable to TRUE
+bool AUTON_CONTROL = false; // initialize AUTON_CONTROL boolean variable to FALSE
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Motor variables
-volatile int VELOCITY = 90; // declare VELOCITY as global to keep track of speed between function calls
+static int VELOCITY = 90; // declare VELOCITY as global to keep track of speed between function calls --> NOT CURRENTLY USED
 Servo ESC_MOTOR; // initialize ESC_MOTOR as a Servo object --> on pin 9
 Servo TURN_SERVO; // initialize TURN_SERVO as a Servo object --> on pin 8
+/*----------------------------------------------------------------------------------------------------------------------*/
 
-millisDelay PROGRAM_STARTUP;
-millisDelay VELOCITY_TIMER;
-volatile long REMAINING_VELOCITY_TIME = 0;
-volatile int CHECK = 0;
 /*
- * VOLATILE FLOAT --> changing number with a lot of decimal points
- * CONST DOUBLE --> unchanging number of double variable type
+ * END VARIABLE INITIALIZATIONS AND DECLARATIONS
  */
-/*----------------------------------------------------------------------------------------------------------------------*/
-// Bluetooth variables
-//#define BLUETOOTH_TX 34 // initialize bluetooth TX pin on 34
-//#define BLUETOOTH_RX 35 // initialize bluetooth RX pin on 35
-//SoftwareSerial BTserial(BLUETOOTH_RX, BLUETOOTH_TX); // create software serial port on pins 34 & 35
-/*----------------------------------------------------------------------------------------------------------------------*/
+ 
 void setup() {
 
   Serial.begin(9600);
@@ -101,15 +99,59 @@ void setup() {
   BluetoothSetup(); // Setup bluetooth telemetry
 }
 
+void GPSNavigation(){
+  // Use GPS navigation functions to run through a course autonomously
+  
+  for(int i = 0; i < ROWS; i++){ // Loop through each waypoint until the course has been completed
+    
+    TARGET_LAT = WAYPOINT_ARRAY[i][0]; // update TARGET_LAT
+    TARGET_LONG = WAYPOINT_ARRAY[i][1]; // update TARGET_LONG
+    int checkpoint = WAYPOINT_ARRAY[i][2]; // check to see if target coordinates is a cone or not
+    
+    if(checkpoint == 0){ // if this is an intermediate checkpoint
+      // Drive fast through target
+      TurnToHeading(105, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
+      delay(1000); // wait for 1 second before entering HeadingHold()
+      while(DISTANCE >= 5){ // drive to target until within 5 meters
+        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+      }
+    }
+    else if(checkpoint == 1){ // if this is a cone location
+      // Drive to target then enter vision program
+      TurnToHeading(105, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
+      delay(1000); // wait for 1 second before entering HeadingHold()
+      while(DISTANCE >= 5){ // drive to target until within 5 meters
+        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+      }
+      
+      // ENTER VISION PROGRAM HERE
+
+      // Use fake vision program until real program is completed
+      while(true){
+        // Drive in a circle backwards forever to mimic vision sensor search function
+        Serial8.println("Searching For Cone");
+        TURN_SERVO.write(0);
+        ESC_MOTOR.write(75);
+      }
+      
+    }
+
+  } // END for(int i = 0; i < ROWS; i++)
+}
+
 void loop() {
   
-  //DeadManSwitch(); // toggle between autonomous control and RC control
-  //ESC_MOTOR.write(120);
-  CurrentCoordinates();
-  if(CURRENT_LAT < 1.0){
-    Serial.println("GPS Lock Lost"); 
+  DeadManSwitch(); // Update state of RC_CONTROL and AUTON_CONTROL
+
+  if(RC_CONTROL){
+    RCDrive(); // return PWM values for RC throttle and steering  
+    LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
+    UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
   }
-  else{
-   GPSNavigation(30); // GPSNavigation(int error boundary to decide when to switch between HeadingHold() and TurnToHeading())  
+  else if(AUTON_CONTROL){
+    GPSNavigation(); // Run through course autonomously
+    // NOTE: ONCE ENTERED YOU CANNOT RETURN TO RC CONTROL
   }
 }

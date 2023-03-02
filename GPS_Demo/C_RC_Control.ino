@@ -33,22 +33,11 @@ void DeadManSwitch() { // Auton|RC Control toggle function
   DEAD_MAN_VALUE = pulseIn(DEAD_MAN_PIN, HIGH); // read value from RC buttons between ~2000 & ~1000
   
   if(DEAD_MAN_VALUE < 2100 && DEAD_MAN_VALUE > 1900) { // if top button is pressed use RC control
-    RCDrive(); // return PWM values for RC throttle and steering  
-    CurrentCoordinates();
-    BluetoothTelemetry();
-    //LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
-    //UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
-    Serial.println("RC Control");
-    Serial8.println("RC Control");
+    RC_CONTROL = true;
+    AUTON_CONTROL = false;
   }
   else{ // if bottom button is pressed, use autonomous routine
-    GPSNavigation(20); // GPSNavigation(int error for HeadingHold(), int error for TurnToHeading())
-    BluetoothTelemetry(); // print out serial data to bluetooth-connected device
-    //TurnToHeading(100, 3); // Use GPS navigation
-    //LimitSwitchCollision(); // if limit switch is triggered, interrupt navigation and do collision response
-    //UltrasonicCollision(); // if sonar is triggered, interrupt navigation and do collision response
-    Serial.println("Autonomous");
-    Serial8.println("Autonomous");
-    Serial8.println(DISTANCE);
+    RC_CONTROL = false;
+    AUTON_CONTROL = true;
   }
 }

@@ -1,7 +1,7 @@
 void BluetoothTelemetry(){
 // Keep reading from HC‐06 bluetooth module and send to Arduino Serial Monitor
 
-    Serial8.print("Distance: ");
+    Serial8.print("Distance To Target: ");
     Serial8.println(DISTANCE);
     Serial8.print("Current Heading: ");
     Serial8.println(CURRENT_HEADING);
