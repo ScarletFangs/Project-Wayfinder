@@ -4,7 +4,7 @@
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Collision response routine
 void CollisionResponse(){ // collision response function
-  // stop --> wait 0.5 sec --> reverse turn 8 o'clock for 1.5 sec --> stop
+  // stop --> wait 1.5 sec --> reverse turn 8 o'clock for 1.5 sec --> stop
   ESC_MOTOR.write(90); // stop
   delay(1500); // wait 1.5 seconds for bot to stop (speed-dependent)
   TURN_SERVO.write(0); // front wheels turn left, back wheels turn right

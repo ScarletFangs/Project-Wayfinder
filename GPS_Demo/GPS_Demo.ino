@@ -7,7 +7,6 @@
 #include <Wire.h> // include I2C library
 #include <Servo.h> // include servo/motor library
 #include <millisDelay.h> // include delay timer library (from SafeString library)
-#include <SoftwareSerial.h> // include software serial library
 /*----------------------------------------------------------------------------------------------------------------------*/
 // VARIABLE TYPES AND THEIR MEANINGS
 
@@ -17,6 +16,8 @@
  * CONST --> read-only variable that cannot be changed after intialization
  * DOUBLE --> floating-point type of up to 15 decimal precision
  * FLOAT --> foating-point type of up to 7 decimal precision
+ * LONG --> integer type of up to 32 bits
+ * SHORT --> integer type of up to 16 bits
  */
  
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -45,8 +46,8 @@ volatile float ANGLE_TURN = 0; // initialize angle provisional to 0
 
 // Initialize the array of target coordinates with 0 = intermediate waypoint and 1 = cone location
 const float WAYPOINT_ARRAY[3][3] = {{34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 1}};
-int ROWS = sizeof(WAYPOINT_ARRAY) / sizeof(WAYPOINT_ARRAY[0]); // number of rows in WAYPOINT_ARRAY
-int COLS = sizeof(WAYPOINT_ARRAY[0]) / sizeof(WAYPOINT_ARRAY[0][0]); // number of columns in WAYPOINT_ARRAY
+short ROWS = sizeof(WAYPOINT_ARRAY) / sizeof(WAYPOINT_ARRAY[0]); // number of rows in WAYPOINT_ARRAY
+short COLS = sizeof(WAYPOINT_ARRAY[0]) / sizeof(WAYPOINT_ARRAY[0][0]); // number of columns in WAYPOINT_ARRAY
 /*----------------------------------------------------------------------------------------------------------------------*/
 // RC controller variables
 #define THROTTLE_PIN 2 // initialize throttle pin
@@ -64,12 +65,12 @@ int STEERING_PW = 0; // initialize steering pulse width updater
 int STEERING_VALUE = 0; // initialize steering servo value
 
 #define DEAD_MAN_PIN 4 // initialize RC dead man switch pin
-volatile long DEAD_MAN_VALUE; // declare value read from RC dead man buttons
+volatile short DEAD_MAN_VALUE; // declare value read from RC dead man buttons
 bool RC_CONTROL = true; // initialize RC_CONTROL boolean variable to TRUE
 bool AUTON_CONTROL = false; // initialize AUTON_CONTROL boolean variable to FALSE
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Motor variables
-static int VELOCITY = 90; // declare VELOCITY as global to keep track of speed between function calls --> NOT CURRENTLY USED
+static short VELOCITY = 90; // declare VELOCITY as global to keep track of speed between function calls --> NOT CURRENTLY USED
 Servo ESC_MOTOR; // initialize ESC_MOTOR as a Servo object --> on pin 9
 Servo TURN_SERVO; // initialize TURN_SERVO as a Servo object --> on pin 8
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -110,20 +111,21 @@ void GPSNavigation(){
     
     if(checkpoint == 0){ // if this is an intermediate checkpoint
       // Drive fast through target
-      TurnToHeading(105, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      Serial.println("Start");
+      TurnToHeading(60, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
       while(DISTANCE >= 5){ // drive to target until within 5 meters
-        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+        HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
       }
     }
     else if(checkpoint == 1){ // if this is a cone location
       // Drive to target then enter vision program
-      TurnToHeading(105, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      TurnToHeading(60, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
       while(DISTANCE >= 5){ // drive to target until within 5 meters
-        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+        HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
       }
       
       // ENTER VISION PROGRAM HERE
@@ -142,16 +144,31 @@ void GPSNavigation(){
 }
 
 void loop() {
-  
-  DeadManSwitch(); // Update state of RC_CONTROL and AUTON_CONTROL
 
-  if(RC_CONTROL){
-    RCDrive(); // return PWM values for RC throttle and steering  
-    LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
-    UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
-  }
-  else if(AUTON_CONTROL){
-    GPSNavigation(); // Run through course autonomously
-    // NOTE: ONCE ENTERED YOU CANNOT RETURN TO RC CONTROL
-  }
+//  CurrentCoordinates();
+//  Serial.println(CURRENT_LAT);
+//  Serial8.println(CURRENT_LAT);
+//  CurrentHeading();
+//  Serial.println(CURRENT_HEADING);
+//  Serial8.println(CURRENT_HEADING);
+//  delay(1000);
+  GPSNavigation();
+  
+  //DeadManSwitch(); // Update state of RC_CONTROL and AUTON_CONTROL
+
+//  if(RC_CONTROL){
+//    Serial.println("RC");
+//    RCDrive(); // return PWM values for RC throttle and steering  
+//    LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
+//    UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
+//  }
+//  else if(AUTON_CONTROL){
+//    Serial.println("Auton");
+//    GPSNavigation(); // Run through course autonomously
+//    // NOTE: ONCE ENTERED YOU CANNOT RETURN TO RC CONTROL
+//  }
+//  else{ // In case something happens with the toggle switch
+//    Serial8.println("ERROR: TOGGLE NOT DETECTED");
+//    Serial.println("ERROR: TOGGLE NOT DETECTED");
+//  }
 }
