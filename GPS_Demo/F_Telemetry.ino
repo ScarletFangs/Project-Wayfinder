@@ -5,12 +5,18 @@ void BluetoothTelemetry(){
     Serial8.println(DISTANCE);
     Serial8.print("Current Heading: ");
     Serial8.println(CURRENT_HEADING);
+    Serial8.print("Target Heading: ");
+    Serial8.println(TARGET_HEADING);
     Serial8.print("Current Lat: ");
     Serial8.println(CURRENT_LAT, 15);
     Serial8.print("Current Long: ");
     Serial8.println(CURRENT_LONG, 15);
+    Serial8.print("Target Lat: ");
+    Serial8.println(TARGET_LAT, 15);
+    Serial8.print("Target Long: ");
+    Serial8.println(TARGET_LONG, 15);
     Serial8.println();
-    delay(50);
+    delay(500);
     digitalWrite(13, LOW); // turn on light to ensure board is working
 
 

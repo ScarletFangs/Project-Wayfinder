@@ -31,7 +31,7 @@ void CurrentCoordinates(){
     // Extract the longitude value and convert it to a float
     String long_string = input_string.substring(index2-11, index2);
     double temp_long; // declare temp_lat variable for assignment later
-    if (input_string.substring(index2-12) == "-") // checks if the index before the start of LATITUDE begins with a negative symbol then multiplies the value by -1
+    if (input_string.substring(index2-12) == "–") // checks if the index before the start of LATITUDE begins with a negative symbol then multiplies the value by -1
     {
       temp_long = -1 * atof(long_string.c_str()) / 100; // if West, make negative
     }
@@ -40,7 +40,7 @@ void CurrentCoordinates(){
       temp_long = atof(long_string.c_str()) / 100; // if East, make positive
     }
     if(abs(temp_long) > 1.0){
-      CURRENT_LONG = temp_long; // update CURRENT_LONG only if given good data
+      CURRENT_LONG = -1 * temp_long; // update CURRENT_LONG only if given good data
     }
   }
 }
@@ -160,9 +160,12 @@ void TurnToHeading(short motor_speed, short error_margin){
   if (ANGLE_TURN > 0){ // if target heading is to the right of the current heading
    while(abs(CURRENT_HEADING - TARGET_HEADING) >= (abs(ANGLE_TURN) / 2) + error_margin){ // turn reverse right until first half of turn is completed
       CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates();
+      CurrentCoordinates(); // get current GPS coordinates of the rover
+      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
       Serial.println("TurnToHeading()");
+      Serial.print("Distance To Target: ");
+      Serial.println(DISTANCE);
       Serial.print("Loop RR-Current Latitude: ");
       Serial.println(CURRENT_LAT);
       Serial.print("Loop RR-Current Longitude: ");
@@ -179,8 +182,12 @@ void TurnToHeading(short motor_speed, short error_margin){
    }
    while(abs(CURRENT_HEADING - TARGET_HEADING) >= error_margin){ // turn forward right until second half of turn is completed
       CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates();
+      CurrentCoordinates(); // get current GPS coordinates of the rover
+      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
+      Serial.println("TurnToHeading()");
+      Serial.print("Distance To Target: ");
+      Serial.println(DISTANCE);
       Serial.print("Loop FR-Current Latitude: ");
       Serial.println(CURRENT_LAT);
       Serial.print("Loop FR-Current Longitude: ");
@@ -199,9 +206,12 @@ void TurnToHeading(short motor_speed, short error_margin){
   else{ // if target heading is to the left of current heading
     while(abs(CURRENT_HEADING - TARGET_HEADING) >= (abs(ANGLE_TURN) / 2) + error_margin){ // turn reverse left until first half of turn is completed
       CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates();
+      CurrentCoordinates(); // get current GPS coordinates of the rover
+      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
       Serial.println("TurnToHeading()");
+      Serial.print("Distance To Target: ");
+      Serial.println(DISTANCE);
       Serial.print("Loop RL-Current Latitude: ");
       Serial.println(CURRENT_LAT);
       Serial.print("Loop RL-Current Longitude: ");
@@ -219,9 +229,12 @@ void TurnToHeading(short motor_speed, short error_margin){
     } 
     while(abs(CURRENT_HEADING - TARGET_HEADING) >= error_margin){ // turn forward left until second half of turn is completed
       CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates();
+      CurrentCoordinates(); // get current GPS coordinates of the rover
+      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
       Serial.println("TurnToHeading()");
+      Serial.print("Distance To Target: ");
+      Serial.println(DISTANCE);
       Serial.print("Loop FL-Current Latitude: ");
       Serial.println(CURRENT_LAT);
       Serial.print("Loop FL-Current Longitude: ");

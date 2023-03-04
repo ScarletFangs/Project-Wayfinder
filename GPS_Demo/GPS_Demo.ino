@@ -45,7 +45,7 @@ volatile double TARGET_HEADING = 0; // initialize target heading to 0
 volatile float ANGLE_TURN = 0; // initialize angle provisional to 0
 
 // Initialize the array of target coordinates with 0 = intermediate waypoint and 1 = cone location
-const float WAYPOINT_ARRAY[3][3] = {{34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 0}, {34.0277013, -117.504342, 1}};
+const float WAYPOINT_ARRAY[2][3] = {{34.027922799, -117.507317200, 0}, {34.02770960, -117.50710870, 1}};
 short ROWS = sizeof(WAYPOINT_ARRAY) / sizeof(WAYPOINT_ARRAY[0]); // number of rows in WAYPOINT_ARRAY
 short COLS = sizeof(WAYPOINT_ARRAY[0]) / sizeof(WAYPOINT_ARRAY[0][0]); // number of columns in WAYPOINT_ARRAY
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -112,19 +112,19 @@ void GPSNavigation(){
     if(checkpoint == 0){ // if this is an intermediate checkpoint
       // Drive fast through target
       Serial.println("Start");
-      TurnToHeading(60, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      TurnToHeading(70, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
-      while(DISTANCE >= 5){ // drive to target until within 5 meters
+      while(DISTANCE >= 3){ // drive to target until within 5 meters
         HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
       }
     }
     else if(checkpoint == 1){ // if this is a cone location
       // Drive to target then enter vision program
-      TurnToHeading(60, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      TurnToHeading(70, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
-      while(DISTANCE >= 5){ // drive to target until within 5 meters
+      while(DISTANCE >= 3){ // drive to target until within 5 meters
         HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
       }
       
