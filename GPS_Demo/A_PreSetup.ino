@@ -5,28 +5,33 @@ void LEDSetup(){
   digitalWrite(13, HIGH); // turn on light to ensure board is working
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
-// Setup compass object
+// Setup compass object and timer
 void CompassSetup(){
+  //COMPASS_TIMER.start(3000); // Set delay interval for COMPASS_TIMER
   Wire.begin(); // Connect compass' SDA & SCL to SDA0 & SCL0 on board --> Pins 18 19
-  // Wire1.begin(); // Connect compass' SDA & SCL to SDA1 & SCL1 on board
-  // Serial.println(compass.init());
   COMPASS.init();
   COMPASS.enableDefault();
+  
   /*
   Calibration values; the default values of +/-32767 for each axis
   lead to an assumed magnetometer bias of 0. Use the Calibrate example
   program to determine appropriate values for your particular unit.
   */
-  COMPASS.m_min = (LSM303::vector<int16_t>){-32767, -32767, -32767};
-  COMPASS.m_max = (LSM303::vector<int16_t>){+32767, +32767, +32767};
+//  COMPASS.m_min = (LSM303::vector<int16_t>){-285, -450, -611};
+//  COMPASS.m_max = (LSM303::vector<int16_t>){+295, +220, -379};
+//  COMPASS.m_min = (LSM303::vector<int16_t>){-411, -494, -613};
+//  COMPASS.m_max = (LSM303::vector<int16_t>){+347, +192, -344};
+  COMPASS.m_min = (LSM303::vector<int16_t>){-169, -302, -546};
+  COMPASS.m_max = (LSM303::vector<int16_t>){+372, +200, -483};
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
-// Setup serial port for GPS (Serial3 = Pins 14 & 15)
+// Setup serial port for GPS (Serial3 = Pins 14 & 15) and timer
 void GPSSetup(){
   // Start the hardware serial communication with the BN220 GPS module
   Serial3.begin(9600);
   Serial3.setTX(14); // TX3 pin
   Serial3.setRX(15); // RX3 pin
+  GPS_TIMER.start(2000); // Set delay interval for GPS_TIMER
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit Switches

@@ -1,6 +1,7 @@
 void BluetoothTelemetry(){
 // Keep reading from HC‐06 bluetooth module and send to Arduino Serial Monitor
 
+    digitalWrite(13, HIGH); // turn on light
     Serial8.print("Distance To Target: ");
     Serial8.println(DISTANCE);
     Serial8.print("Current Heading: ");
@@ -16,8 +17,8 @@ void BluetoothTelemetry(){
     Serial8.print("Target Long: ");
     Serial8.println(TARGET_LONG, 15);
     Serial8.println();
-    delay(500);
-    digitalWrite(13, LOW); // turn on light to ensure board is working
+    //delay(50);
+    digitalWrite(13, LOW); // turn off light
 
 
   

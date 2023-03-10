@@ -24,7 +24,7 @@
 // Limit Switch variables
 #define REAR_LIMIT_SWITCH 5 // initialize rear limit switch to pin 5
 #define LEFT_LIMIT_SWITCH 6 // initialize front left limit switch to pin 6
-#define RIGHT_LIMIT_SWITCH 7 // initialize front right limit switch to pin 7
+#define RIGHT_LIMIT_SWITCH 23 // initialize front right limit switch to pin 7
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic variables
 #define TRIG_PIN 22 // Trigger Pin of Ultrasonic Sensor to pin 22
@@ -34,6 +34,11 @@ IntervalTimer MY_TIMER_2; // declare timer that uses pin 11
 /*----------------------------------------------------------------------------------------------------------------------*/
 // GPS and Compass variables
 LSM303 COMPASS; // declare an LSM303 compass object
+millisDelay COMPASS_TIMER; // Declare COMPASS delay timer
+short COMPASS_DELAY; // Declare COMPASS_TIMER delay interval
+
+millisDelay GPS_TIMER; // Declare GPS delay timer
+short GPS_DELAY; //Declare GPS_TIMER delay interval
 
 static double CURRENT_LAT = 0; // initialize current latitude to 0
 static double CURRENT_LONG = 0; // initialize current longitude to 0
@@ -44,10 +49,12 @@ volatile double DISTANCE = 21; // initialize final distance variable to 21
 volatile double TARGET_HEADING = 0; // initialize target heading to 0
 volatile float ANGLE_TURN = 0; // initialize angle provisional to 0
 
+const short ROWS = 3; // number of rows in WAYPOINT_ARRAY
+const short COLS = 3; // number of columns in WAYPOINT_ARRAY
 // Initialize the array of target coordinates with 0 = intermediate waypoint and 1 = cone location
-const float WAYPOINT_ARRAY[2][3] = {{34.027922799, -117.507317200, 0}, {34.02770960, -117.50710870, 1}};
-short ROWS = sizeof(WAYPOINT_ARRAY) / sizeof(WAYPOINT_ARRAY[0]); // number of rows in WAYPOINT_ARRAY
-short COLS = sizeof(WAYPOINT_ARRAY[0]) / sizeof(WAYPOINT_ARRAY[0][0]); // number of columns in WAYPOINT_ARRAY
+float WAYPOINT_ARRAY[ROWS][COLS] = {{34.029115599999997, -117.502715499999993, 0}, {34.028881800000000, -117.502658599999989, 0}, {34.029115599999997, -117.502715499999993, 1}};
+
+double TARGET_HEADING_ARRAY[4] = {90, 0, 270, 0};
 /*----------------------------------------------------------------------------------------------------------------------*/
 // RC controller variables
 #define THROTTLE_PIN 2 // initialize throttle pin
@@ -86,8 +93,10 @@ void setup() {
   ESC_MOTOR.attach(9); // Set ESC_MOTOR to pin 9
   TURN_SERVO.attach(8); // Set TURN_SERVO to pin 8
 
-  ESC_MOTOR.write(90); // Reset drive motors
-  TURN_SERVO.write(90); // reset turn servo
+  ESC_MOTOR.write(90);
+  TURN_SERVO.write(90);
+
+  delay(5000); // Send ESC and Servo 0 signal until program starts
 
   LEDSetup(); // Setup LED
 
@@ -98,6 +107,8 @@ void setup() {
   RCSetup(); // Setup RC control
 
   BluetoothSetup(); // Setup bluetooth telemetry
+
+  delay(1000); // Wait while peripherals set up
 }
 
 void GPSNavigation(){
@@ -112,20 +123,29 @@ void GPSNavigation(){
     if(checkpoint == 0){ // if this is an intermediate checkpoint
       // Drive fast through target
       Serial.println("Start");
-      TurnToHeading(70, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      TurnToHeading(80, 10); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
-      while(DISTANCE >= 3){ // drive to target until within 5 meters
-        HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
+      while(DISTANCE >= 15){ // drive fast to target until within 10 meters
+        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+      }
+      while(DISTANCE >= 5){ // drive to target until within 5 meters
+        HeadingHold(110); // HeadingHold(int ESC_MOTOR speed)
       }
     }
     else if(checkpoint == 1){ // if this is a cone location
       // Drive to target then enter vision program
-      TurnToHeading(70, 2); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
+      TurnToHeading(80, 10); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
-      while(DISTANCE >= 3){ // drive to target until within 5 meters
-        HeadingHold(90); // HeadingHold(int ESC_MOTOR speed)
+      while(DISTANCE >= 10){ // drive fast to target until within 10 meters
+        HeadingHold(120); // HeadingHold(int ESC_MOTOR speed)
+      }
+      while(DISTANCE >= 5){ // drive to target until within 5 meters
+        HeadingHold(110); // HeadingHold(int ESC_MOTOR speed)
+      }
+      while(DISTANCE >=1){ // drive slow to target until within 1 meters
+        HeadingHold(100); // HeadingHold(int ESC_MOTOR speed)
       }
       
       // ENTER VISION PROGRAM HERE
@@ -134,8 +154,9 @@ void GPSNavigation(){
       while(true){
         // Drive in a circle backwards forever to mimic vision sensor search function
         Serial8.println("Searching For Cone");
+        Serial.println("Searching For Cone");
         TURN_SERVO.write(0);
-        ESC_MOTOR.write(75);
+        ESC_MOTOR.write(80);
       }
       
     }
@@ -145,16 +166,20 @@ void GPSNavigation(){
 
 void loop() {
 
-//  CurrentCoordinates();
-//  Serial.println(CURRENT_LAT);
-//  Serial8.println(CURRENT_LAT);
-//  CurrentHeading();
-//  Serial.println(CURRENT_HEADING);
-//  Serial8.println(CURRENT_HEADING);
-//  delay(1000);
-  GPSNavigation();
+//  CurrentCoordinates(); // Get current rover coordinates
+//  if(CURRENT_LAT != 0){ // Do nothing until GPS updates
+//    GPSNavigation();
+//  }
   
   //DeadManSwitch(); // Update state of RC_CONTROL and AUTON_CONTROL
+  //CurrentHeading();
+  //Serial.println(CURRENT_HEADING);
+  for(int i = 0; i < 3; i++){
+    TARGET_HEADING = TARGET_HEADING_ARRAY[i];
+    TurnToHeading(80, 5);
+    ESC_MOTOR.write(90);
+    delay(5000);
+  }
 
 //  if(RC_CONTROL){
 //    Serial.println("RC");

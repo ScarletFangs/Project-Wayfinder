@@ -13,6 +13,7 @@ void CollisionResponse(){ // collision response function
   delay(1500); // reverse for 1.5 seconds
   TURN_SERVO.write(90); // wheels straight
   while(VELOCITY <= 90){ // while rover is not yet at the desired speed
+    Serial.println("COLLISION RESPONSE");
     delay(250);
     VELOCITY++; // gradually reduce speed until target speed is reached
     ESC_MOTOR.write(VELOCITY); // pass motor current velocity reading
@@ -22,9 +23,9 @@ void CollisionResponse(){ // collision response function
 // Limit switch collision detection
 void LimitSwitchCollision(){
   // CHECKING LIMIT SWITCH INPUT
-  if (digitalRead(LEFT_LIMIT_SWITCH) == HIGH || digitalRead(RIGHT_LIMIT_SWITCH) == HIGH) // if limit switch is triggered
+  if (digitalRead(RIGHT_LIMIT_SWITCH) == LOW) // if limit switch is triggered
   {
-    //Serial.println("Collision Detected");
+    Serial.println("Collision Detected");
     CollisionResponse(); // enter CollisionResponse() routine
   }
   else
