@@ -4,43 +4,56 @@
 
 void CurrentCoordinates(){
   // Parse current latitude and longitude from GPS serial messages
+  
   // Check if there is data available on the GPS module
   if (Serial3.available()>0) {
     // Read the data from the GPS module and save as a string
     String input_string = Serial3.readStringUntil('\n');
         
-    input_string.remove(12,1);
-    short index1 = input_string.indexOf(",N"); // Find the index of "N"
-    short index2 = input_string.indexOf(",W"); // Find the index of "W"
+    input_string.remove(12,1); // Remove irrelevant characters from the beginning of the string
+    short index1 = input_string.indexOf(",N"); // Look for the index of N
+    short index2 = input_string.indexOf(",E"); // Look for the index of E
+    bool south;
+    bool west;
+
+    // Check the directions of the parsed coordinate
+    if (index1 == -1){ // If N isn't found, the coordinate is South
+      index1 = input_string.indexOf(",S");
+      south = true;
+    }
+    if (index2 == -1){ // If E isn't found, the coordinate is West
+      index2 = input_string.indexOf(",W");
+      west = true;
+    }
     
     // Extract the latitude value and convert it to a float
     String lat_string = input_string.substring(index1-10, index1);
     double temp_lat; // declare temp_lat variable for assignment later
-    if (input_string.substring(index1-9) == "-") // checks if the index before the start of LATITUDE begins with a negative symbol then multiplies the value by -1
-    {
-      temp_lat = -1 * atof(lat_string.c_str()) / 100; // if South, make negative
+    
+    if (south){ // If coordinate is South, make the value negative
+      temp_lat = -1 * (atof(lat_string.c_str()) / 100); // if South, make negative
     }
-    else
-    {
+    else{ // If coordinate is North, keep positive
       temp_lat = atof(lat_string.c_str()) / 100; // if North, make positive
     }
-    if(abs(temp_lat) > 1.0){
+    
+    if (temp_lat != 0){
       CURRENT_LAT = temp_lat; // update CURRENT_LAT only if given good data
     }
     
     // Extract the longitude value and convert it to a float
     String long_string = input_string.substring(index2-11, index2);
     double temp_long; // declare temp_lat variable for assignment later
-    if (input_string.substring(index2-12) == "–") // checks if the index before the start of LATITUDE begins with a negative symbol then multiplies the value by -1
-    {
-      temp_long = -1 * atof(long_string.c_str()) / 100; // if West, make negative
+    
+    if (west){ // If coordinate is West, make value negative
+      temp_long = -1 * (atof(long_string.c_str()) / 100); // if West, make negative
     }
-    else
-    {
+    else{ // If coordinate is East, keep positive
       temp_long = atof(long_string.c_str()) / 100; // if East, make positive
     }
-    if(abs(temp_long) > 1.0){
-      CURRENT_LONG = -1 * temp_long; // update CURRENT_LONG only if given good data
+    
+    if(temp_long  != 0){
+      CURRENT_LONG = temp_long; // update CURRENT_LONG only if given good data
     }
   }
 }
@@ -59,9 +72,8 @@ void GPSUpdate(double initial_lat, double initial_long, double final_lat, double
    * Uses haversine formula to calculate distance and target heading between two points when given coordinates of 
    * current position and target position.
    */
-  // CONST: Do not allow this variable to be changed by anything
   const float R = 6371e3; // meters --> radius of the earth (assumed spherical geometry)
-  // convert GPS coordinates from degrees to radians
+  // Convert GPS coordinates from degrees to radians
   initial_lat = initial_lat * M_PI / 180;
   initial_long = initial_long * M_PI / 180;
   final_lat = final_lat * M_PI / 180;
@@ -158,7 +170,7 @@ void TurnToHeading(short motor_speed, short error_margin){
   
   CurrentCoordinates(); // get current GPS coordinates of the rover
   CurrentHeading(); // update current heading of the rover
-  //GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
+  GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
   TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
   
   if (ANGLE_TURN > 0){ // if target heading is to the right of the current heading
@@ -167,53 +179,41 @@ void TurnToHeading(short motor_speed, short error_margin){
       CurrentCoordinates(); // get current GPS coordinates of the rover
       //GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
-      Serial8.println("TurnToHeading()");
-      BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
-      Serial.println("TurnToHeading()");
-      Serial.print("Distance To Target: ");
-      Serial.println(DISTANCE);
-      Serial.print("Loop FR-Current Latitude: ");
-      Serial.println(CURRENT_LAT, 12);
-      Serial.print("Loop FR-Current Longitude: ");
-      Serial.println(CURRENT_LONG, 12);
-      Serial.print("Loop FR-Current Heading: ");
-      Serial.println(CURRENT_HEADING);
-      Serial.print("Loop FR-Target Heading: ");
-      Serial.println(TARGET_HEADING);
-      Serial.print("Loop FR-Angle Difference: ");
-      Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
-      Serial.println();
+      
+      #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
+        Serial.println("TurnToHeading()"); // Print current function rover is in
+        SerialMonitor(); // print rover data to the serial monitor
+      #endif
+      
+      #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
+        Serial8.println("TurnToHeading()"); // Print current function rover is in
+        BluetoothTelemetry(); // print to bluetooth device
+      #endif
+      
       // Perform reverse turn
       TurnRight(motor_speed); // TurnRight(speed)
    }
-   ANGLE_TURN = 999;
   }
-  else if(ANGLE_TURN != 999){ // if target heading is to the left of current heading
+  else if(ANGLE_TURN < 0){ // if target heading is to the left of current heading
     while(abs(CURRENT_HEADING - TARGET_HEADING) >= error_margin){ // turn forward left until second half of turn is completed
       CurrentHeading(); // update current heading of the rover
       CurrentCoordinates(); // get current GPS coordinates of the rover
-      //GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
+      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
       TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
-      Serial8.println("HeadingHold()");
-      BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
-      Serial.println("TurnToHeading()");
-      Serial.print("Distance To Target: ");
-      Serial.println(DISTANCE);
-      Serial.print("Loop FL-Current Latitude: ");
-      Serial.println(CURRENT_LAT, 12);
-      Serial.print("Loop FL-Current Longitude: ");
-      Serial.println(CURRENT_LONG, 12);
-      Serial.print("Loop FL-Current Heading: ");
-      Serial.println(CURRENT_HEADING);
-      Serial.print("Loop FL-Target Heading: ");
-      Serial.println(TARGET_HEADING);
-      Serial.print("Loop FL-Angle Difference: ");
-      Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
-      Serial.println();
+      
+      #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
+        Serial.println("TurnToHeading()"); // Print current function rover is in
+        SerialMonitor(); // print rover data to the serial monitor
+      #endif
+      
+      #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
+        Serial8.println("TurnToHeading()"); // Print current function rover is in
+        BluetoothTelemetry(); // print to bluetooth device
+      #endif
+      
       // Perform reverse turn
       TurnLeft(motor_speed); // TurnLeft(speed)
     }
-    ANGLE_TURN = 999;
   }
 }
 
@@ -248,33 +248,27 @@ void HeadingHold(int motor_speed){
       temp_turn_value = (int)(angle_provisional + 360);
   }
 
-  temp_turn_value = map(temp_turn_value, -180, 180, 30, 150);
+  temp_turn_value = map(temp_turn_value, -180, 180, 30, 150); // Map initial turn angle to a smaller range
 
   if(temp_turn_value > 120){
     temp_turn_value = 120; // Cap at 120;
   }
   else if(temp_turn_value < 60){
-    temp_turn_value = 60; // cap at 60
+    temp_turn_value = 60; // Cap at 60
   }
 
-  TURN_SERVO.write(temp_turn_value);
+  TURN_SERVO.write(temp_turn_value); // Tell the rover to turn according to temp_turn_value
 
-  Serial8.println("HeadingHold()");
-  BluetoothTelemetry(); // print to bluetooth device --> 50ms BLOCKING DELAY
-  Serial.println("HeadingHold()");
-  Serial.print("Distance: ");
-  Serial.println(DISTANCE);
-  Serial.print("Loop S-Current Latitude: ");
-  Serial.println(CURRENT_LAT, 12);
-  Serial.print("Loop S-Current Longitude: ");
-  Serial.println(CURRENT_LONG, 12);
-  Serial.print("Loop S-Current Heading: ");
-  Serial.println(CURRENT_HEADING);
-  Serial.print("Loop S-Target Heading: ");
-  Serial.println(TARGET_HEADING);
-  Serial.print("Loop S-Angle Difference: ");
-  Serial.println(abs(CURRENT_HEADING-TARGET_HEADING));
-  Serial.print("Loop S-Turn Servo Angle: ");
-  Serial.println(temp_turn_value);
-  Serial.println();
+  #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
+    ANGLE_TURN = angle_provisional; // Update ANGLE_TURN for debugging purposes
+    Serial.println("HeadingHold()"); // Print current function rover is in
+    SerialMonitor(); // Print rover data to the serial monitor
+  #endif
+  
+  #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
+    ANGLE_TURN = angle_provisional; // Update ANGLE_TURN for debugging purposes
+    Serial8.println("HeadingHold()"); // Print current function rover is in
+    BluetoothTelemetry(); // Print to bluetooth device
+  #endif
+  
 }

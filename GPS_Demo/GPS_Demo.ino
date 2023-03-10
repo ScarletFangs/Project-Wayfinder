@@ -19,7 +19,11 @@
  * LONG --> integer type of up to 32 bits
  * SHORT --> integer type of up to 16 bits
  */
- 
+
+/*----------------------------------------------------------------------------------------------------------------------*/
+// Debugging Variables (#define = turn on prints, #undefine = turn off prints)
+#define SERIAL_DEBUG // Initialize serial monitor debugging condition
+#define BLUETOOTH_DEBUG // Initialize Bluetooth debugging condition
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit Switch variables
 #define REAR_LIMIT_SWITCH 5 // initialize rear limit switch to pin 5
@@ -45,14 +49,14 @@ static double CURRENT_LONG = 0; // initialize current longitude to 0
 volatile double CURRENT_HEADING = 0; // initialize current heading of rover to 0 (Direct North)
 volatile double TARGET_LAT = 0; // initialize target latitude to 0
 volatile double TARGET_LONG = 0; // initialize target longitude to 0
-volatile double DISTANCE = 21; // initialize final distance variable to 21
+volatile double DISTANCE = 0; // initialize final distance variable to 21
 volatile double TARGET_HEADING = 0; // initialize target heading to 0
 volatile float ANGLE_TURN = 0; // initialize angle provisional to 0
 
 const short ROWS = 3; // number of rows in WAYPOINT_ARRAY
 const short COLS = 3; // number of columns in WAYPOINT_ARRAY
 // Initialize the array of target coordinates with 0 = intermediate waypoint and 1 = cone location
-float WAYPOINT_ARRAY[ROWS][COLS] = {{34.029115599999997, -117.502715499999993, 0}, {34.028881800000000, -117.502658599999989, 0}, {34.029115599999997, -117.502715499999993, 1}};
+float WAYPOINT_ARRAY[ROWS][COLS] = {{34.029115599999997, -117.502715499999993, 1}, {34.028881800000000, -117.502658599999989, 0}, {34.029115599999997, -117.502715499999993, 1}};
 
 double TARGET_HEADING_ARRAY[4] = {90, 0, 270, 0};
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -96,6 +100,8 @@ void setup() {
   ESC_MOTOR.write(90);
   TURN_SERVO.write(90);
 
+  Serial.println("Warming Up");
+
   delay(5000); // Send ESC and Servo 0 signal until program starts
 
   LEDSetup(); // Setup LED
@@ -107,6 +113,8 @@ void setup() {
   RCSetup(); // Setup RC control
 
   BluetoothSetup(); // Setup bluetooth telemetry
+
+  Serial.println("Starting Program");
 
   delay(1000); // Wait while peripherals set up
 }
@@ -122,7 +130,6 @@ void GPSNavigation(){
     
     if(checkpoint == 0){ // if this is an intermediate checkpoint
       // Drive fast through target
-      Serial.println("Start");
       TurnToHeading(80, 10); // TurnToHeading(int ESC_MOTOR speed, int error margin of difference between CURRENT and TARGET headings)
       ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
       delay(1000); // wait for 1 second before entering HeadingHold()
@@ -166,34 +173,24 @@ void GPSNavigation(){
 
 void loop() {
 
-//  CurrentCoordinates(); // Get current rover coordinates
-//  if(CURRENT_LAT != 0){ // Do nothing until GPS updates
-//    GPSNavigation();
-//  }
-  
-  //DeadManSwitch(); // Update state of RC_CONTROL and AUTON_CONTROL
-  //CurrentHeading();
-  //Serial.println(CURRENT_HEADING);
-  for(int i = 0; i < 3; i++){
-    TARGET_HEADING = TARGET_HEADING_ARRAY[i];
-    TurnToHeading(80, 5);
-    ESC_MOTOR.write(90);
-    delay(5000);
+  CurrentCoordinates(); // Get current rover coordinates
+  if(CURRENT_LAT == 0){ // Do nothing until GPS updates
+    Serial.println("GPS Lock Lost");
   }
-
-//  if(RC_CONTROL){
-//    Serial.println("RC");
-//    RCDrive(); // return PWM values for RC throttle and steering  
-//    LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
-//    UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
-//  }
-//  else if(AUTON_CONTROL){
-//    Serial.println("Auton");
-//    GPSNavigation(); // Run through course autonomously
-//    // NOTE: ONCE ENTERED YOU CANNOT RETURN TO RC CONTROL
-//  }
-//  else{ // In case something happens with the toggle switch
-//    Serial8.println("ERROR: TOGGLE NOT DETECTED");
-//    Serial.println("ERROR: TOGGLE NOT DETECTED");
-//  }
+  else{
+    if(RC_CONTROL){ // If in RC Control
+      Serial.println("RC");
+      RCDrive(); // return PWM values for RC throttle and steering  
+      LimitSwitchCollision(); // if limit switch is triggered, interrupt RC control and do collision response
+      UltrasonicCollision(); // if sonar is triggered, interrupt RC control and do collision response
+    }
+    else if(AUTON_CONTROL){ // If in Autonomous Control
+      GPSNavigation(); // Run through course autonomously
+      // NOTE: ONCE ENTERED YOU CANNOT RETURN TO RC CONTROL
+    }
+    else{ // In case something happens with the toggle switch
+      Serial8.println("ERROR: TOGGLE NOT DETECTED");
+      Serial.println("ERROR: TOGGLE NOT DETECTED");
+    } 
+  }
 }

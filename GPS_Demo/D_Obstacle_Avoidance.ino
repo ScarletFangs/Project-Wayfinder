@@ -2,6 +2,12 @@
  * Checking functions for collision detection and obstacle avoidance
  */
 /*----------------------------------------------------------------------------------------------------------------------*/
+void CollisionDetection(){
+  if(LimitSwitchCollision() || UltrasonicCollision()){ // if a collision is detected
+    CollisionResponse(); // Enter the collision response routine
+  }
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
 // Collision response routine
 void CollisionResponse(){ // collision response function
   // stop --> wait 1.5 sec --> reverse turn 8 o'clock for 1.5 sec --> stop
@@ -13,7 +19,6 @@ void CollisionResponse(){ // collision response function
   delay(1500); // reverse for 1.5 seconds
   TURN_SERVO.write(90); // wheels straight
   while(VELOCITY <= 90){ // while rover is not yet at the desired speed
-    Serial.println("COLLISION RESPONSE");
     delay(250);
     VELOCITY++; // gradually reduce speed until target speed is reached
     ESC_MOTOR.write(VELOCITY); // pass motor current velocity reading
@@ -21,29 +26,29 @@ void CollisionResponse(){ // collision response function
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit switch collision detection
-void LimitSwitchCollision(){
+bool LimitSwitchCollision(){
   // CHECKING LIMIT SWITCH INPUT
   if (digitalRead(RIGHT_LIMIT_SWITCH) == LOW) // if limit switch is triggered
   {
     Serial.println("Collision Detected");
-    CollisionResponse(); // enter CollisionResponse() routine
+    return true;
   }
   else
   {
-    //Serial.println("No Collision Detected"); // Do nothing otherwise
+    return false; // Do nothing otherwise
   }
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic collision detection
-void UltrasonicCollision(){
+bool UltrasonicCollision(){
   // CHECKING ULTRASONIC TRIG
   if (UltrasonicCM(TRIG_PIN, ECHO_PIN) < 50) // if limit switch is triggered below 50cm
   {
-    //Serial.println("Collision Detected");
-    CollisionResponse(); // enter CollisionResponse() routine
+    Serial.println("Collision Detected");
+    return true;
   }
   else
   {
-    //Serial.println("No Collision Detected"); // Do nothing otherwise
+    return false; // Do nothing otherwise
   }
 }
