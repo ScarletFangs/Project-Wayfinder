@@ -1,7 +1,7 @@
 const int PING_PIN = 22; // Trigger Pin of Ultrasonic Sensor
 const int ECHO_PIN = 23; // Echo Pin of Ultrasonic Sensor
-IntervalTimer MY_TIMER_1;
-IntervalTimer MY_TIMER_2;
+IntervalTimer MY_TIMER_1; // Declare
+IntervalTimer MY_TIMER_2; // Declare
 
 void UltrasonicSetup(){
   // setup ultrasonic pins
