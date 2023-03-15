@@ -1,7 +1,7 @@
 /*
  * Printing rover data through serial monitor and bluetooth telemetry
  */
- 
+/*----------------------------------------------------------------------------------------------------------------------*/ 
 void BluetoothTelemetry(){
   // Keep reading from HC‐06 bluetooth module and send to Arduino Serial Monitor
 
@@ -42,7 +42,7 @@ void BluetoothTelemetry(){
     Serial8.write(Serial.read());
   }
 }
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void SerialMonitor(){ 
   // Print rover positional data to the serial monitor
   

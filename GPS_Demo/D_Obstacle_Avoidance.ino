@@ -28,10 +28,11 @@ void CollisionResponse(){ // collision response function
 // Limit switch collision detection
 bool LimitSwitchCollision(){
   // CHECKING LIMIT SWITCH INPUT
-  if (digitalRead(RIGHT_LIMIT_SWITCH) == LOW) // if limit switch is triggered
-  {
+
+  // If a limit switch is triggered
+  if (digitalRead(RIGHT_LIMIT_SWITCH) == HIGH || digitalRead(LEFT_LIMIT_SWITCH) == HIGH || digitalRead(REAR_LIMIT_SWITCH) == HIGH)  {
     Serial.println("Collision Detected");
-    return true;
+    return true; // return true if rover has collided with something
   }
   else
   {
@@ -41,14 +42,58 @@ bool LimitSwitchCollision(){
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic collision detection
 bool UltrasonicCollision(){
-  // CHECKING ULTRASONIC TRIG
-  if (UltrasonicCM(TRIG_PIN, ECHO_PIN) < 50) // if limit switch is triggered below 50cm
+  // CHECKING ULTRASONIC READINGS
+
+  UltrasonicSweeping(); // Check front 3 sensors
+  
+  if (DISTANCE_ARRAY[0] < 10 || DISTANCE_ARRAY[1] < 10 || DISTANCE_ARRAY[2] < 10) // if ultrasonic is triggered below 10cm
   {
     Serial.println("Collision Detected");
-    return true;
+    return true; // return true if collision imminent
   }
   else
   {
     return false; // Do nothing otherwise
   }
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void UltrasonicSweeping(){ // Check front 3 ultrasonics in a sweeping fashion
+   for (uint8_t i = 0; i < SONAR_NUM; i++) { // Loop through all the sensors
+    if (millis() >= PING_TIMER_ARRAY[i]) { // Is it this sensor's time to ping?
+      
+      PING_TIMER_ARRAY[i] += PING_INTERVAL * SONAR_NUM; // Set next time this sensor will be pinged
+      
+      if (i == 0 && CURRENT_SENSOR == SONAR_NUM - 1){ 
+        FindMinSensor(); // Sensor ping cycle complete, do something with the results
+      }
+      
+      SONAR_TIME[CURRENT_SENSOR].timer_stop();          // Make sure previous timer is canceled before starting a new ping (insurance)
+      CURRENT_SENSOR = i;                          // Update sensor being accessed
+      DISTANCE_ARRAY[CURRENT_SENSOR] = MAX_DISTANCE; // Make distance zero in case there's no ping echo for this sensor
+      SONAR_TIME[CURRENT_SENSOR].ping_timer(EchoCheck); // Do the ping (processing continues, interrupt will call echoCheck to look for echo)
+    }
+  }
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void EchoCheck(){ 
+  // If ping received, update DISTANCE_ARRAY with the new distance
+  
+  if (SONAR_TIME[CURRENT_SENSOR].check_timer()){
+    DISTANCE_ARRAY[CURRENT_SENSOR] = SONAR_TIME[CURRENT_SENSOR].ping_result / US_ROUNDTRIP_CM;
+  }
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void FindMinSensor() { 
+  // After Sensor ping cycle complete, find the sensors with the smallest distance
+  
+  unsigned int sensor_max_val = DISTANCE_ARRAY[0]; // create temporary distance value for comparison
+  unsigned int min_sensor = 0; // assume smallest distance is detected by right sensor
+  for (uint8_t i = 0; i < SONAR_NUM; i++){ // loop through each forward-facing ultrasonic
+    if (DISTANCE_ARRAY[i] < sensor_max_val) { // if a smaller distance value is reported by an ultrasonic sensor
+         sensor_max_val = DISTANCE_ARRAY[i]; // update the smallest value detected
+         min_sensor = i; // 0 = left sensor; 1 = middle sensor; 2 = right Sensor 
+      }
+    
+  }
+  GLOBAL_MIN_SENSOR = min_sensor; // Update which sensor has the minimum distance
 }

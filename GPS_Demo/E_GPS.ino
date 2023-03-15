@@ -1,7 +1,7 @@
 /*
  * Converting GPS Latitude and Longitude to distance to drive and target heading
  */
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void CurrentCoordinates(){
   // Parse current latitude and longitude from GPS serial messages
   
@@ -13,8 +13,8 @@ void CurrentCoordinates(){
     input_string.remove(12,1); // Remove irrelevant characters from the beginning of the string
     short index1 = input_string.indexOf(",N"); // Look for the index of N
     short index2 = input_string.indexOf(",E"); // Look for the index of E
-    bool south;
-    bool west;
+    bool south = false;
+    bool west = false;
 
     // Check the directions of the parsed coordinate
     if (index1 == -1){ // If N isn't found, the coordinate is South
@@ -57,16 +57,16 @@ void CurrentCoordinates(){
     }
   }
 }
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void CurrentHeading(){
   // Grab current heading of the rover from compass and update global variable CURRENT_HEADING
   COMPASS.read();
   CURRENT_HEADING = COMPASS.heading() + 13; // account for difference between Magnetic North and True North
-  if(CURRENT_HEADING >= 360){
+  if(CURRENT_HEADING >= 360){ // If above correction creates an angle > 360
     CURRENT_HEADING = fmod(CURRENT_HEADING, 360); // flip over 360/0 boundary
   }
 }
- 
+/*----------------------------------------------------------------------------------------------------------------------*/ 
 void GPSUpdate(double initial_lat, double initial_long, double final_lat, double final_long){
   /*
    * Uses haversine formula to calculate distance and target heading between two points when given coordinates of 
@@ -98,8 +98,8 @@ void GPSUpdate(double initial_lat, double initial_long, double final_lat, double
   TARGET_HEADING = TARGET_HEADING * 180 / M_PI; // Convert target heading from radians to degrees (given in -180-180 range)
   TARGET_HEADING = fmod(TARGET_HEADING + 360.0, 360); // Normalize to 0-360 compass bearing
   // fmod = floating point modulus % --> fmod(x, y) == x % y
- }
-
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
 void TurningAngle(double target_heading, double current_heading){ // function to determine Turning Angle from CURRENT_HEADING & TARGET_HEADING
   
   double angle_provisional = target_heading - current_heading; // Take the difference of target heading and current heading
@@ -116,15 +116,7 @@ void TurningAngle(double target_heading, double current_heading){ // function to
   }
   
 }
-
-/* MOTOR SPEEDS AND DIRECTIONS
-* 0 <= speed <= 90 == reverse direction for motors
-* 90 <= speed <= 180 == forward direction for motors
-* 90 == stop motors
-* 0 == full speed in reverse
-* 180 == full speed forwards
-*/
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void TurnLeft(short motor_speed){ // takes in speed for ESC_MOTOR
 
   int temp_turn_angle = (int)round(abs(CURRENT_HEADING - TARGET_HEADING)); // check difference between CURRENT_HEADING & TARGET_HEADING and cast to int
@@ -142,7 +134,7 @@ void TurnLeft(short motor_speed){ // takes in speed for ESC_MOTOR
     ESC_MOTOR.write(motor_speed); // double call due to ESC settings
   }
 }
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void TurnRight(short motor_speed){ // takes in speed for ESC_MOTOR
 
   int temp_turn_angle = (int)round(abs(CURRENT_HEADING - TARGET_HEADING)); // check difference between CURRENT_HEADING & TARGET_HEADING and cast to int
@@ -160,79 +152,44 @@ void TurnRight(short motor_speed){ // takes in speed for ESC_MOTOR
     ESC_MOTOR.write(motor_speed); // double call due to ESC settings
   }
 }
-
-void StopRover(){
-   ESC_MOTOR.write(90); // stop drive motors
-}
-
-void TurnToHeading(short motor_speed, short error_margin){
+/*----------------------------------------------------------------------------------------------------------------------*/
+void TurnToHeading(short motor_speed){
   // Turn rover towards target heading with a set speed and precision of turn
-  
-  CurrentCoordinates(); // get current GPS coordinates of the rover
-  CurrentHeading(); // update current heading of the rover
-  GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
-  TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
-  
-  if (ANGLE_TURN > 0){ // if target heading is to the right of the current heading
-   while(abs(CURRENT_HEADING - TARGET_HEADING) >= error_margin){ // turn forward right until second half of turn is completed
-      CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates(); // get current GPS coordinates of the rover
-      //GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
-      TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
-      
-      #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
-        Serial.println("TurnToHeading()"); // Print current function rover is in
-        SerialMonitor(); // print rover data to the serial monitor
-      #endif
-      
-      #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
-        Serial8.println("TurnToHeading()"); // Print current function rover is in
-        BluetoothTelemetry(); // print to bluetooth device
-      #endif
-      
-      // Perform reverse turn
-      TurnRight(motor_speed); // TurnRight(speed)
-   }
+
+  if (ANGLE_TURN > 0){ // if target heading is to the right of the current heading 
+    // Perform reverse turn
+    TurnRight(motor_speed); // TurnRight(speed)
+    
+    #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
+      Serial.println("TurnToHeading()"); // Print current function rover is in
+      SerialMonitor(); // print rover data to the serial monitor
+    #endif
+    
+    #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
+      Serial8.println("TurnToHeading()"); // Print current function rover is in
+      BluetoothTelemetry(); // print to bluetooth device
+    #endif
   }
-  else if(ANGLE_TURN < 0){ // if target heading is to the left of current heading
-    while(abs(CURRENT_HEADING - TARGET_HEADING) >= error_margin){ // turn forward left until second half of turn is completed
-      CurrentHeading(); // update current heading of the rover
-      CurrentCoordinates(); // get current GPS coordinates of the rover
-      GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // calculate DISTANCE and TARGET_HEADING
-      TurningAngle(TARGET_HEADING, CURRENT_HEADING); // Calculate ANGLE_TURN by using current target heading and current heading
-      
-      #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
-        Serial.println("TurnToHeading()"); // Print current function rover is in
-        SerialMonitor(); // print rover data to the serial monitor
-      #endif
-      
-      #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
-        Serial8.println("TurnToHeading()"); // Print current function rover is in
-        BluetoothTelemetry(); // print to bluetooth device
-      #endif
-      
-      // Perform reverse turn
-      TurnLeft(motor_speed); // TurnLeft(speed)
-    }
+  else if(ANGLE_TURN < 0){ // if target heading is to the left of current heading 
+    // Perform reverse turn
+    TurnLeft(motor_speed); // TurnLeft(speed)
+    
+    #ifdef SERIAL_DEBUG // if SERIAL_DEBUG condition is true
+      Serial.println("TurnToHeading()"); // Print current function rover is in
+      SerialMonitor(); // print rover data to the serial monitor
+    #endif
+    
+    #ifdef BLUETOOTH_DEBUG // if BLUETOOTH_DEBUG condition is true
+      Serial8.println("TurnToHeading()"); // Print current function rover is in
+      BluetoothTelemetry(); // print to bluetooth device
+    #endif
   }
 }
-
+/*----------------------------------------------------------------------------------------------------------------------*/
 void HeadingHold(int motor_speed){
   // Drive straight using compass to course correct
-
-  if(GPS_TIMER.justFinished()){
-    CurrentCoordinates(); // get current rover GPS coordinates 
-    GPS_TIMER.repeat();
-  }
-  //LimitSwitchCollision(); // if collision detected with limit switch, respond with CollisionResponse()
-  CurrentHeading(); // get current compass bearing of the rover
-  GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // update DISTANCE and TARGET_HEADING
   
   ESC_MOTOR.write(motor_speed); // drive forward at speed set by motor_speed      
-  CurrentHeading(); // update current heading of the rover
-  CurrentCoordinates(); // update current coordinates of the rover
-  GPSUpdate(CURRENT_LAT, CURRENT_LONG, TARGET_LAT, TARGET_LONG); // update DISTANCE and TARGET_HEADING
-
   
   int temp_turn_value = 90; // create turn value that is casted to an integer for better reading by ESC
   double angle_provisional = TARGET_HEADING - CURRENT_HEADING; // Take the difference of target heading and current heading
@@ -250,11 +207,11 @@ void HeadingHold(int motor_speed){
 
   temp_turn_value = map(temp_turn_value, -180, 180, 30, 150); // Map initial turn angle to a smaller range
 
-  if(temp_turn_value > 120){
-    temp_turn_value = 120; // Cap at 120;
+  if(temp_turn_value > 135){
+    temp_turn_value = 135; // Cap at 135;
   }
-  else if(temp_turn_value < 60){
-    temp_turn_value = 60; // Cap at 60
+  else if(temp_turn_value < 45){
+    temp_turn_value = 45; // Cap at 45
   }
 
   TURN_SERVO.write(temp_turn_value); // Tell the rover to turn according to temp_turn_value
@@ -271,4 +228,43 @@ void HeadingHold(int motor_speed){
     BluetoothTelemetry(); // Print to bluetooth device
   #endif
   
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void UpdateTargetWaypoint(int waypoint){
+  // Update the target coordinates and the type of waypoint
+      
+  TARGET_LAT = WAYPOINT_ARRAY[waypoint][0]; // Update TARGET_LAT
+  TARGET_LONG = WAYPOINT_ARRAY[waypoint][1]; // Update TARGET_LONG
+  CHECKPOINT = WAYPOINT_ARRAY[waypoint][2]; // Check to see if target coordinates is a cone or not
+
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void GPSNavigation(){
+  // Use GPS navigation functions to run through a course autonomously
+  
+  if(abs(ANGLE_TURN) > HEADING_ERROR){ // While current heading is +- 5 degrees off target heading
+    TurnToHeading(80); // Turn to target heading
+  }
+  
+  ESC_MOTOR.write(90); // stop drive motors before entering HeadingHold()
+  delay(1500); // wait for 1.5 seconds before entering HeadingHold()
+  
+  if(DISTANCE >= 5){ // drive fast to target until within 5 meters
+    HeadingHold(110); // HeadingHold(int ESC_MOTOR speed)
+  }
+  else if(DISTANCE >= 2.5){ // drive to target until within 2.5 meters
+    HeadingHold(100); // HeadingHold(int ESC_MOTOR speed)
+  }
+  else if(DISTANCE >= 1){ // drive to target until within 1 meter
+    HeadingHold(100); // HeadingHold(int ESC_MOTOR speed)
+  }
+  
+  if(DISTANCE < 1){ // If within 1 meter of the target
+    if(CHECKPOINT == 1){ // If this was a cone location, activate vision sensor
+      Serial.println("Searching For Cone");
+      Serial8.println("Searching For Cone");
+    }
+    WAYPOINT++; // Go to next waypoint  
+    UpdateTargetWaypoint(WAYPOINT); // Update target coordinates
+  }
 }
