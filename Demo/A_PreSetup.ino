@@ -1,6 +1,53 @@
-/*
- * Setup functions for limit switches, LED, RC control
- */
+/*----------------------------------------------------------------------------------------------------------------------*/
+// On-board LED to know when program has been successfully downloaded to board
+void LEDSetup(){
+  pinMode(13, OUTPUT);
+  digitalWrite(13, HIGH); // turn on light to ensure board is working
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+// Setup compass object and timer
+void CompassSetup(){
+  Wire.begin(); // Connect compass' SDA & SCL to SDA0 & SCL0 on board --> Pins 18 19
+  COMPASS.init();
+  COMPASS.enableDefault();
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+void CalibrateCompass(){
+  // Calibrate the compass
+  
+  COMPASS.read();
+  
+  running_min.x = min(running_min.x, COMPASS.m.x);
+  running_min.y = min(running_min.y, COMPASS.m.y);
+  running_min.z = min(running_min.z, COMPASS.m.z);
+
+  running_max.x = max(running_max.x, COMPASS.m.x);
+  running_max.y = max(running_max.y, COMPASS.m.y);
+  running_max.z = max(running_max.z, COMPASS.m.z);
+
+  // Print calibration values to serial monitor
+  snprintf(report, sizeof(report), "min: {%+6d, %+6d, %+6d}    max: {%+6d, %+6d, %+6d}",
+    running_min.x, running_min.y, running_min.z,
+    running_max.x, running_max.y, running_max.z);
+  Serial.println(report);  
+
+  // Update calibration values as compass is calibrated
+  X_MIN = running_min.x;
+  Y_MIN = running_min.y;
+  Z_MIN = running_min.z;
+  
+  X_MAX = running_max.x;
+  Y_MAX = running_max.y;
+  Z_MAX = running_max.z;
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+// Setup serial port for GPS (Serial3 = Pins 14 & 15) and timer
+void GPSSetup(){
+  // Start the hardware serial communication with the BN220 GPS module
+  Serial3.begin(9600);
+  Serial3.setTX(14); // TX3 pin
+  Serial3.setRX(15); // RX3 pin
+}
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit Switches
 void LimitSwitchSetup(){
@@ -13,46 +60,11 @@ void LimitSwitchSetup(){
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonics
 void UltrasonicSetup(){
-  // setup ultrasonic pins
-  pinMode(PING_PIN, OUTPUT); //enable PING_PINg as an OUTPUT
-  pinMode(ECHO_PIN, INPUT); //enable ECHO_PIN as an INPUT
-  MY_TIMER_1.begin(PingPH, 10); //set PING_PIN voltage to high 5V every 2 microsecodns
-  MY_TIMER_2.begin(PingPL, 11); //set PING_PIN volatage to low 0 volts (ground) 10 microsecodns
-}
-
-float UltrasonicIn(const int x, const int y){
-    // returns distance of detected object in inches
-    float duration;
-    
-    digitalWrite(x, LOW); //set PING_PIN volatage to low 0 volts (ground)  
-    duration = pulseIn(y, HIGH); //return duration of pulse and set to duration
-    return duration / 74 / 2; //use to convert to inches
-}
-
-float UltrasonicCM(const int x, const int y){
-    // returns distance of detected object in centimeters
-    float duration;
-    
-    digitalWrite(x, LOW); // set PING_PIN volatage to low 0 volts (ground)
-    duration = pulseIn(y, HIGH); // return duration of pulse and set to duration
-    // Sound travels at 343 meters per second, which means it needs 29.155 microseconds per centimeter... 
-    // So, we have to divide the duration by 29 and then by 2, because the sound has to travel the distance twice... 
-    // It travels to the object and then back to the sensor.
-    return duration / 29 / 2; // use to convert to centimeters
-}
-
-void PingPH(){
-  digitalWrite(PING_PIN, HIGH); // set ping pin to HIGH
+  // Setup ultrasonic timers
+  PING_TIMER_ARRAY[0] = millis() + 75; // First ping starts at 75ms, gives time for the Arduino to chill before starting
+  for (uint8_t i = 1; i < SONAR_NUM; i++){ // Set the starting time for each sensor.
+  PING_TIMER_ARRAY[i] = PING_TIMER_ARRAY[i - 1] + PING_INTERVAL;
   }
-
-void PingPL(){
-  digitalWrite(PING_PIN, LOW); // set ping pin to LOW
-  }
-/*----------------------------------------------------------------------------------------------------------------------*/
-// On-board LED to know when program has been successfully downloaded to board
-void LEDSetup(){
-  pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH); // turn on light to ensure board is working
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // RC controller
@@ -62,4 +74,11 @@ void RCSetup(){
   pinMode(STEERING_PIN, INPUT_PULLUP); // set the pin to accept inputs
   attachInterrupt(digitalPinToInterrupt(STEERING_PIN),SteeringTimer,CHANGE); // attach interrupt to STEERING_PIN from changing states
   pinMode(DEAD_MAN_PIN, INPUT); // set the pin to accept inputs
+}
+/*----------------------------------------------------------------------------------------------------------------------*/
+// Bluetooth telemetry setup
+void BluetoothSetup(){
+  Serial8.begin(9600);
+  Serial8.setTX(34); // TX8 pin
+  Serial8.setRX(35); // RX8 pin
 }
