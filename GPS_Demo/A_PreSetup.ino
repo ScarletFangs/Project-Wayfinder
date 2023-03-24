@@ -2,7 +2,7 @@
 // On-board LED to know when program has been successfully downloaded to board
 void LEDSetup(){
   pinMode(13, OUTPUT);
-  digitalWrite(13, HIGH); // turn on light to ensure board is working
+  digitalWrite(13, HIGH); // Turn on light to ensure board is working
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Setup compass object and timer
@@ -30,6 +30,7 @@ void CalibrateCompass(){
     running_min.x, running_min.y, running_min.z,
     running_max.x, running_max.y, running_max.z);
   Serial.println(report);
+  Serial8.println(report);
 
   // Update calibration values as compass is calibrated
   X_MIN = running_min.x;
@@ -51,8 +52,9 @@ void GPSSetup(){
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit Switches
 void LimitSwitchSetup(){
-  pinMode(LEFT_LIMIT_SWITCH, INPUT_PULLDOWN); // set the pin to accept inputs
-  pinMode(RIGHT_LIMIT_SWITCH, INPUT_PULLDOWN); // set the pin to accept inputs
+  pinMode(LEFT_LIMIT_SWITCH, INPUT_PULLDOWN); // Set the pin to accept inputs
+  pinMode(RIGHT_LIMIT_SWITCH, INPUT_PULLDOWN); // Set the pin to accept inputs
+  pinMode(REAR_LIMIT_SWITCH, INPUT_PULLDOWN); // Set the pin to accept inputs
   // Note:
   // Limit switches need to be set to "INPUT_PULLDOWN" this is due to
   // when their circuit is disconnected they have noise that will mess with the actual values
@@ -60,20 +62,20 @@ void LimitSwitchSetup(){
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonics
 void UltrasonicSetup(){
-  // Setup ultrasonic timers
-  PING_TIMER_ARRAY[0] = millis() + 75; // First ping starts at 75ms, gives time for the Arduino to chill before starting
-  for (uint8_t i = 1; i < SONAR_NUM; i++){ // Set the starting time for each sensor.
-  PING_TIMER_ARRAY[i] = PING_TIMER_ARRAY[i - 1] + PING_INTERVAL;
+  PING_TIMER_ARRAY[0] = millis(); // Start first sonar timer
+
+  for (uint8_t i = 1; i < SONAR_NUM; i++) { // Set each sonar's timer
+    PING_TIMER_ARRAY[i] = PING_TIMER_ARRAY[i-1] + PING_INTERVAL;
   }
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // RC controller
 void RCSetup(){
-  pinMode(THROTTLE_PIN, INPUT_PULLUP); // set the pin to accept inputs
-  attachInterrupt(digitalPinToInterrupt(THROTTLE_PIN),ThrottleTimer,CHANGE); // attach interrupt to THROTTLE_PIN from changing states
-  pinMode(STEERING_PIN, INPUT_PULLUP); // set the pin to accept inputs
-  attachInterrupt(digitalPinToInterrupt(STEERING_PIN),SteeringTimer,CHANGE); // attach interrupt to STEERING_PIN from changing states
-  pinMode(DEAD_MAN_PIN, INPUT); // set the pin to accept inputs
+  pinMode(THROTTLE_PIN, INPUT_PULLUP); // Set the pin to accept inputs
+  attachInterrupt(digitalPinToInterrupt(THROTTLE_PIN),ThrottleTimer,CHANGE); // Attach interrupt to THROTTLE_PIN from changing states
+  pinMode(STEERING_PIN, INPUT_PULLUP); // Set the pin to accept inputs
+  attachInterrupt(digitalPinToInterrupt(STEERING_PIN),SteeringTimer,CHANGE); // Attach interrupt to STEERING_PIN from changing states
+  pinMode(DEAD_MAN_PIN, INPUT); // Set the pin to accept inputs
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Bluetooth telemetry setup

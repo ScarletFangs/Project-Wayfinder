@@ -3,57 +3,50 @@
  */
 /*----------------------------------------------------------------------------------------------------------------------*/
 void CollisionDetection(){
-  if(LimitSwitchCollision() || UltrasonicCollision()){ // if a collision is detected
-    CollisionResponse(); // Enter the collision response routine
-  }
+//  if(LimitSwitchCollision()){ // If a collision is detected
+//    CollisionResponse(); // Enter the collision response routine
+//  }
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Collision response routine
-void CollisionResponse(){ // collision response function
-  // stop --> wait 1.5 sec --> reverse turn 8 o'clock for 1.5 sec --> stop
-  ESC_MOTOR.write(90); // stop
-  delay(1500); // wait 1.5 seconds for bot to stop (speed-dependent)
-  TURN_SERVO.write(0); // front wheels turn left, back wheels turn right
-  VELOCITY = 80; // slow reverse speed
-  ESC_MOTOR.write(VELOCITY); // reverse
-  delay(1500); // reverse for 1.5 seconds
-  TURN_SERVO.write(90); // wheels straight
-  while(VELOCITY <= 90){ // while rover is not yet at the desired speed
+void CollisionResponse(){ // Collision response function
+  // Stop --> Wait 1.5 sec --> Reverse turn 8 o'clock for 1.5 sec --> Stop
+  
+  ESC_MOTOR.write(90); // Stop
+  delay(1500); // Wait 1.5 seconds for bot to stop (speed-dependent)
+  
+  TURN_SERVO.write(0); // Front wheels turn left, back wheels turn right
+  VELOCITY = 80; // Slow reverse speed
+  ESC_MOTOR.write(VELOCITY); // Reverse
+  delay(1500); // Reverse for 1.5 seconds
+  TURN_SERVO.write(90); // Wheels straight
+  while(VELOCITY <= 90){ // While rover is not yet stopped
     delay(250);
     VELOCITY++; // gradually reduce speed until target speed is reached
     ESC_MOTOR.write(VELOCITY); // pass motor current velocity reading
-  } // this loop is trying to "smooth" transition between backup and driving forward again
+  } // This loop is trying to "smooth" transition between backup and driving forward again
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Limit switch collision detection
-bool LimitSwitchCollision(){
+void LimitSwitchCollision(){
   // CHECKING LIMIT SWITCH INPUT
-
-  // If a limit switch is triggered
+  
   if (digitalRead(RIGHT_LIMIT_SWITCH) == HIGH || digitalRead(LEFT_LIMIT_SWITCH) == HIGH || digitalRead(REAR_LIMIT_SWITCH) == HIGH)  {
-    Serial.println("Collision Detected");
-    return true; // return true if rover has collided with something
-  }
-  else
-  {
-    return false; // Do nothing otherwise
+    Serial.println("Collision Detected: Limit Switch");
+    CollisionResponse(); // Trigger CollisionResponse() if rover has collided with something
   }
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic collision detection
-bool UltrasonicCollision(){
+void UltrasonicCollision(){
   // CHECKING ULTRASONIC READINGS
-
-  UltrasonicSweeping(); // Check front 3 sensors
   
-  if (DISTANCE_ARRAY[0] < 10 || DISTANCE_ARRAY[1] < 10 || DISTANCE_ARRAY[2] < 10) // if ultrasonic is triggered below 10cm
+  if (DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] < 30) // if ultrasonic is triggered below 20cm
   {
-    Serial.println("Collision Detected");
-    return true; // return true if collision imminent
-  }
-  else
-  {
-    return false; // Do nothing otherwise
+    Serial.println("Collision Detected: Ultrasonic");
+    Serial.println(GLOBAL_MIN_SENSOR);
+    Serial.println();
+    CollisionResponse(); // Trigger CollisionResponse() if rover has collided with something
   }
 }
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -86,11 +79,11 @@ void EchoCheck(){
 void FindMinSensor() { 
   // After Sensor ping cycle complete, find the sensors with the smallest distance
   
-  unsigned int sensor_max_val = DISTANCE_ARRAY[0]; // create temporary distance value for comparison
-  unsigned int min_sensor = 0; // assume smallest distance is detected by right sensor
-  for (uint8_t i = 0; i < SONAR_NUM; i++){ // loop through each forward-facing ultrasonic
-    if (DISTANCE_ARRAY[i] < sensor_max_val) { // if a smaller distance value is reported by an ultrasonic sensor
-         sensor_max_val = DISTANCE_ARRAY[i]; // update the smallest value detected
+  unsigned int sensor_max_val = DISTANCE_ARRAY[0]; // Create temporary distance value for comparison
+  unsigned int min_sensor = 0; // Assume smallest distance is detected by right sensor
+  for (uint8_t i = 0; i < SONAR_NUM; i++){ // Loop through each forward-facing ultrasonic
+    if (DISTANCE_ARRAY[i] < sensor_max_val) { // If a smaller distance value is reported by an ultrasonic sensor
+         sensor_max_val = DISTANCE_ARRAY[i]; // Update the smallest value detected
          min_sensor = i; // 0 = left sensor; 1 = middle sensor; 2 = right Sensor 
       }
     
