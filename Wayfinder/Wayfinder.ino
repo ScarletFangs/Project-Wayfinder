@@ -15,6 +15,9 @@
 #include <Pixy2CCC.h> // Pixy2 camera library
 #include "A_Global_Variables.h" // Global variable header file 
 
+volatile unsigned long timer;
+volatile unsigned long timer2;
+
 void setup(){
 
   Serial.begin(115200);
@@ -36,12 +39,12 @@ void setup(){
 
   UltrasonicSetup(); // Setup ultrasonic sensors
 
-  VisionSetup(); // Setup vision sensor
+  //VisionSetup(); // Setup vision sensor
     
   Serial.println("Warming Up, Please Turn On ESC.");
   Serial8.println("Warming Up, Please Turn On ESC.");
 
-  delay(2000); // Send ESC and Servo 0 signal until program starts
+  delay(5000); // Send ESC and Servo 0 signal until program starts
   
 /*----------------------------------------------------------------------------------------------------------------------*/
   #if DEBUG_MODE == 0
@@ -67,7 +70,7 @@ void setup(){
     Serial8.println("Waiting for GPS Lock...");
   
     // Wait until GPS lock is obtained
-    while(CURRENT_LAT == 0 && digitalRead(RIGHT_LIMIT_SWITCH) == LOW){
+    while(CURRENT_LAT == 0){
       CurrentCoordinates(); // Get initial GPS coordinates of the rover
       CurrentHeading(); // Get initial heading of the rover
       UpdateTargetWaypoint(WAYPOINT); // Update target coordinates
@@ -131,11 +134,22 @@ void setup(){
 }
 /*----------------------------------------------------------------------------------------------------------------------*/ 
 void loop(){
+//  timer = millis();
   SensorTimers(); // Update sensors on regular timing intervals
   
   CollisionDetection(); // If a collision was detected, enter a collision response routine
+
+  if(COLLISION_FINISHED){
+    Serial.println("DRIVING");
+    ESC_MOTOR.write(100);
+    TURN_SERVO.write(90);
+  }
+
   
-  GPSNavigation(); // Main GPS navigational routine
+  //GPSNavigation(); // Main GPS navigational routine
+//  timer2 = millis() - timer;
+//  Serial.println(timer2);
+  
 }
 /*----------------------------------------------------------------------------------------------------------------------*/ 
 void SensorTimers(){
@@ -156,6 +170,13 @@ void SensorTimers(){
     else{
       CURRENT_SENSOR++; // Go to next ultrasonic sensor
     }
+    
+//    Serial.print(DISTANCE_ARRAY[0]);
+//    Serial.print(" | ");
+//    Serial.print(DISTANCE_ARRAY[1]);
+//    Serial.print(" | ");
+//    Serial.println(DISTANCE_ARRAY[2]);
+
   }
 
   // Update compass bearing every 20ms

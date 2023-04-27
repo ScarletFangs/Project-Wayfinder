@@ -4,9 +4,9 @@
 int BEGIN_PROGRAM = 0; // Initialize start check
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Debugging Variables (1 = turn on prints, 0 = turn off prints)
-#define DEBUG_MODE 0 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
-#define SERIAL_DEBUG 0 // Initialize serial monitor debugging condition
-#define BLUETOOTH_DEBUG 1 // Initialize Bluetooth debugging condition
+#define DEBUG_MODE 1 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
+#define SERIAL_DEBUG 1 // Initialize serial monitor debugging condition
+#define BLUETOOTH_DEBUG 0 // Initialize Bluetooth debugging condition
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Collision Response Variables
 elapsedMillis COLLISION_TIMER; // Declare elapsedMillis timer object
@@ -30,8 +30,8 @@ const int REAR = 6; // Initialize directionality call
 #define LEFT_ECHO 17    // Echo Pin of Left Ultrasonic Sensor to pin 17
 #define LEFT_US 0       // Left US position
 
-#define CENTER_TRIG 39  // Trigger Pin of Center Ultrasonic Sensor to pin 39 ----> CURRENTLY NOT WIRED
-#define CENTER_ECHO 38  // Echo Pin of Center Ultrasonic Sensor to pin 38 -------> CURRENTLY NOT WIRED
+#define CENTER_TRIG 36  // Trigger Pin of Center Ultrasonic Sensor to pin 36
+#define CENTER_ECHO 38  // Echo Pin of Center Ultrasonic Sensor to pin 38
 #define CENTER_US 1     // Center US position
 
 #define RIGHT_TRIG 41   // Trigger Pin of Right Ultrasonic Sensor to pin 41
@@ -43,7 +43,7 @@ const int REAR = 6; // Initialize directionality call
 unsigned int DISTANCE_ARRAY[SONAR_NUM] = {0, 0, 0}; // Where the ping distances are updated and check in UltrasonicCollision()
 uint8_t CURRENT_SENSOR = 0;         // Keeps track of which sensor is active
 unsigned int GLOBAL_MIN_SENSOR = 0; // Sensor with the smallest distance 0 = Right Sensor; 1 = Middle Sensor; 2 = Left Sensor 
-unsigned int OBS_DISTANCE = 40; // Minimum distance for ultra sonics to a avoid obstacle
+unsigned int OBS_DISTANCE = 10; // Minimum distance for ultra sonics to a avoid obstacle
 
 bool ULTRASONIC_COLLISION = false; // Initialize tracker for ultrasonic collision detection
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -65,7 +65,7 @@ volatile double ANGLE_TURN = 0; // Initialize angle provisional to 0
 const double HEADING_ERROR = 10; // Initialize margin of error for TurnToHeading()
 
 // Initialize check to go to TurnToHeading() --> 0 = Start in HeadingHold(), 1 = Start in TurnToHeading()
-int TURN_TO = 0; 
+volatile int TURN_TO = 0; 
 /*----------------------------------------------------------------------------------------------------------------------*/
 /* Initialize the array of target coordinates with third column denoting waypoint type
  *  0 = Intermediate waypoint --> Enters TurnToHeading() for next point
@@ -83,7 +83,7 @@ const short CONE_FINAL = 999;
 
 const short NUM_WAYPOINTS = 9; // Number of waypoints
 const double WAYPOINT_ARRAY[NUM_WAYPOINTS][COLS] = 
-{{37.3956998, -121.5314804, CONE},
+{{37.3956998, -121.5314804, TRANSITION},
  {37.3957841, -121.5313310, TRANSITION},
  {37.3957541, -121.5313010, TRANSITION},
  {37.3957269, -121.5311781, CONE},
@@ -124,7 +124,7 @@ volatile short DEAD_MAN_VALUE; // Declare value read from RC dead man buttons
 bool RC_CONTROL = false; // Initialize RC_CONTROL boolean variable to TRUE
 bool AUTON_CONTROL = false; // Initialize AUTON_CONTROL boolean variable to FALSE
 
-#define RC_TOGGLE 1 // Initialize RC_TOGGLE check (1 == Check for remote control, 0 == Don't check for remote control)
+#define RC_TOGGLE 0 // Initialize RC_TOGGLE check (1 == Check for remote control, 0 == Don't check for remote control)
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Motor variables
 Servo ESC_MOTOR; // Initialize ESC_MOTOR as a Servo object --> on pin 9
@@ -145,7 +145,8 @@ bool ALTERNATE_BACK = false; // Initialize alternate back collision response
 elapsedMillis LS_TIMER; // Declare elapsedMillis timer object
 #define LS_DELAY 5 // Initialize length of LS_TIMER
 elapsedMillis US_TIMER; // Declare elapsedMillis timer object
-#define US_DELAY 40 // Initialize length of US_TIMER
+#define US_DELAY 20 // Initialize length of US_TIMER
+volatile unsigned long PING_TIMER; // Non-blocking microsecond timer to send ultrasonic pings
 elapsedMillis COM_TIMER; // Declare elapsedMillis timer object
 #define COM_DELAY 20 // Initialize length of COM_TIMER
 elapsedMillis GPS_TIMER; // Declare elapsedMillis timer object

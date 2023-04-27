@@ -237,7 +237,7 @@ void GPSNavigation(){
     EMERGENCY_CHECK = 0; // Restart emergency timer
     
     ESC_MOTOR.write(90); // Stop drive motors before entering HeadingHold()
-    delay(1000); // Wait for 1 second before entering HeadingHold()
+    //delay(1000); // Wait for 1 second before entering HeadingHold()
     return; // Exit GPSNavigation()
   }
   else if(DISTANCE >= 7.5 && TURN_TO == 0){ // Drive fast to target until within 7.5 meters
@@ -365,7 +365,7 @@ void GPSNavigation(){
     TURN_TO = 1; // Enter TurnToHeading() on next function call
     NEW_STEP = 1; // Update the next step to go to
     
-    delay(250); // Hold rover for 0.25 seconds before moving on
+    //delay(250); // Hold rover for 0.25 seconds before moving on
     return; // Exit GPSNavigation() 
   }
   else if(DISTANCE < 1.5 && CHECKPOINT == FAST_TRANSITION){ // If at a fast transition point
