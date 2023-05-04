@@ -56,12 +56,7 @@ void SearchMode(){
 
   // Reverse turn in circle while vision sensor pans left to right
   TURN_SERVO.write(0);
-  if(CHECKPOINT == CONE_GRASS){ // If on grass, drive faster
-    ESC_MOTOR.write(81);
-  }
-  else{
-    ESC_MOTOR.write(83);
-  }
+  ESC_MOTOR.write(83);
   
   if(pixy.ccc.getBlocks() > 0){ // If cone detected, enter pursuit mode
     ESC_MOTOR.write(90); // Stop rover

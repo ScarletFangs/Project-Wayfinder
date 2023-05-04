@@ -40,20 +40,32 @@ void BluetoothTelemetry(){
 void SerialMonitor(){ 
   // Print rover positional data to the serial monitor
   
-  Serial.print("Distance: ");
-  Serial.println(DISTANCE);
-  
-  Serial.print("C Lat: ");
-  Serial.println(CURRENT_LAT, 7);
-  
-  Serial.print("C Long: ");
-  Serial.println(CURRENT_LONG, 7);
-  
-  Serial.print("T Lat: ");
-  Serial.println(TARGET_LAT, 7);
-  
-  Serial.print("T Long: ");
-  Serial.println(TARGET_LONG, 7);
+//  Serial.print("Distance: ");
+//  Serial.println(DISTANCE);
+//  
+//  Serial.print("C Lat: ");
+//  Serial.println(CURRENT_LAT, 7);
+//  
+//  Serial.print("C Long: ");
+//  Serial.println(CURRENT_LONG, 7);
+//  
+//  Serial.print("T Lat: ");
+//  Serial.println(TARGET_LAT, 7);
+//  
+//  Serial.print("T Long: ");
+//  Serial.println(TARGET_LONG, 7);
+
+  Serial.print("Proportional: ");
+  Serial.println(COMPASS_ERROR);
+
+  Serial.print("Integral: ");
+  Serial.println(COMPASS_TOTAL_ERROR);
+
+  Serial.print("Derivative: ");
+  Serial.println(COMPASS_DERIVATIVE);
+
+  Serial.print("Total Error: ");
+  Serial.println(COMPASS_LOCK);
   
   Serial.print("C Heading: ");
   Serial.println(CURRENT_HEADING);

@@ -15,6 +15,7 @@
 #include <Pixy2CCC.h> // Pixy2 camera library
 #include "A_Global_Variables.h" // Global variable header file 
 
+// Runtime timers
 volatile unsigned long timer;
 volatile unsigned long timer2;
 
@@ -134,32 +135,65 @@ void setup(){
 }
 /*----------------------------------------------------------------------------------------------------------------------*/ 
 void loop(){
-//  timer = millis();
-  SensorTimers(); // Update sensors on regular timing intervals
-  
-  CollisionDetection(); // If a collision was detected, enter a collision response routine
 
-  if(COLLISION_FINISHED){
-    Serial.println("DRIVING");
-    ESC_MOTOR.write(100);
-    TURN_SERVO.write(90);
+  // Do nothing until rear limit switch is triggered
+  while(!BEGIN_PROGRAM){
+    SensorTimers(); // Update sensors on regular timing intervals
+    if(digitalRead(REAR_LIMIT_SWITCH) == HIGH){
+      BEGIN_PROGRAM = true; 
+      TARGET_HEADING = 90;
+      TurningAngle(TARGET_HEADING);
+    }
   }
+  
+  SensorTimers();
+  
+  
 
-  
-  //GPSNavigation(); // Main GPS navigational routine
-//  timer2 = millis() - timer;
-//  Serial.println(timer2);
-  
+//  #if RC_TOGGLE == 1 // If expecting to use remote control
+//  // Autonomous Navigation
+//  if(!RC_CONTROL){
+//    while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
+//      ESC_MOTOR.write(90);
+//      TURN_SERVO.write(90);
+//      DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
+//    }
+//    SensorTimers(); // Update sensors on regular timing intervals
+//  
+//    CollisionDetection(); // If a collision was detected, enter a collision response routine
+//  
+//    if(COLLISION_FINISHED){
+//      GPSNavigation(); // Main GPS navigational routine
+//    }
+//  }
+//  // Manual navigation
+//  else if(RC_CONTROL){
+//    RCDrive(); // Control rover through remote control
+//  }
+//  #elif RC_TOGGLE == 0 // If not expecting to use remote control
+//    while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
+//      ESC_MOTOR.write(90);
+//      TURN_SERVO.write(90);
+//      DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
+//    }
+//    SensorTimers(); // Update sensors on regular timing intervals
+//  
+//    CollisionDetection(); // If a collision was detected, enter a collision response routine
+//  
+//    if(COLLISION_FINISHED){
+//      GPSNavigation(); // Main GPS navigational routine
+//    }
+//  #endif
 }
 /*----------------------------------------------------------------------------------------------------------------------*/ 
 void SensorTimers(){
-  // Update limit switch states every 5ms
+  // Update LIMIT_SWITCH_COLLISION every 5ms
   if(LS_TIMER > LS_DELAY){
     LS_TIMER = 0; // Reset LS_TIMER
     LimitSwitchCollision(); // Update Limit switch state
   }
   
-  // Update Ultrasonic states every 40ms
+  // Update ULTRASONIC_COLLISION every 20ms
   if(US_TIMER > US_DELAY){
     US_TIMER = 0; // Reset US_TIMER
     UltrasonicCollision(); // Update collision state for one ultrasonic
@@ -179,15 +213,18 @@ void SensorTimers(){
 
   }
 
-  // Update compass bearing every 20ms
+  // Update CURRENT_HEADING, ANGLE_TURN every 20ms
   if(COM_TIMER > COM_DELAY){
     COM_TIMER = 0; // Reset COM_TIMER
-    CurrentHeading(); // Update LS_FRONT & LS_REAR
+    CurrentHeading(); // Update CURRENT_HEADING
+    TurningAngle(TARGET_HEADING); // Update ANGLE_TURN from CURRENT_HEADING & TARGET_HEADING
+    HeadingHold(98);
   }
 
-  // Update GPS coordinates every 1s
+  // Update CURRENT_LAT, CURRENT_LONG, DISTANCE every 1s
   if(GPS_TIMER > GPS_DELAY){
     GPS_TIMER = 0; // Reset GPS_TIMER
-    GPSUpdate(); // Update CURRENT_LAT & CURRENT_LONG
+    //CurrentCoordinates(); // Update current coordinates of the rover
+    //GPSUpdate(); // Update CURRENT_LAT & CURRENT_LONG
   }
 }

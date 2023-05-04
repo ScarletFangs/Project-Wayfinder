@@ -1,10 +1,10 @@
 /*
  * All initializations and declarations of variables
  */
-int BEGIN_PROGRAM = 0; // Initialize start check
+bool BEGIN_PROGRAM = false; // Initialize start check
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Debugging Variables (1 = turn on prints, 0 = turn off prints)
-#define DEBUG_MODE 1 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
+#define DEBUG_MODE 0 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
 #define SERIAL_DEBUG 1 // Initialize serial monitor debugging condition
 #define BLUETOOTH_DEBUG 0 // Initialize Bluetooth debugging condition
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -64,6 +64,17 @@ volatile double TARGET_HEADING = 0; // Initialize target heading to 0
 volatile double ANGLE_TURN = 0; // Initialize angle provisional to 0
 const double HEADING_ERROR = 10; // Initialize margin of error for TurnToHeading()
 
+bool COMPASS_PID = true;
+volatile double COMPASS_ERROR = 0;
+volatile double COMPASS_DERIVATIVE = 0;
+const double CINTEGRAL_BOUND = 7.5;
+volatile double COMPASS_prevERROR = 0;
+volatile double COMPASS_TOTAL_ERROR = 0;
+volatile double COMPASS_LOCK = 0;
+const double cp = 0.75;
+const double ci = 0.3;
+const double cd = 0.35;
+
 // Initialize check to go to TurnToHeading() --> 0 = Start in HeadingHold(), 1 = Start in TurnToHeading()
 volatile int TURN_TO = 0; 
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -77,21 +88,12 @@ const short COLS = 3; // Number of columns in WAYPOINT_ARRAY --> DO NOT CHANGE T
 // Initialize all waypoint states
 const short TRANSITION = 1;
 const short FAST_TRANSITION = 2;
-const short CONE = 9;
-const short CONE_GRASS = 99;
-const short CONE_FINAL = 999;
+const short MANUAL = 9;
+const short BLACK_BOX = 99;
 
 const short NUM_WAYPOINTS = 9; // Number of waypoints
 const double WAYPOINT_ARRAY[NUM_WAYPOINTS][COLS] = 
-{{37.3956998, -121.5314804, TRANSITION},
- {37.3957841, -121.5313310, TRANSITION},
- {37.3957541, -121.5313010, TRANSITION},
- {37.3957269, -121.5311781, CONE},
- {37.3957914, -121.5312276, FAST_TRANSITION},
- {37.3958235, -121.5313006, TRANSITION},
- {37.3957946, -121.5312546, CONE},
- {37.3958953, -121.5312384, FAST_TRANSITION},
- {37.3959933, -121.5312131, CONE_FINAL}};
+{{37.3956998, -121.5314804, TRANSITION}};
 
  
 unsigned long STARTUP_TIMER = 0; // Initialize the startup timer
@@ -121,8 +123,9 @@ int STEERING_CENTER; // Declare the zero signal for steering
 
 #define DEAD_MAN_PIN 4 // Initialize RC dead man switch pin
 volatile short DEAD_MAN_VALUE; // Declare value read from RC dead man buttons
-bool RC_CONTROL = false; // Initialize RC_CONTROL boolean variable to TRUE
-bool AUTON_CONTROL = false; // Initialize AUTON_CONTROL boolean variable to FALSE
+bool DEAD_MAN = false; // Initialize DEAD_MAN to stop rover mid-autonomous run
+bool RC_CONTROL = false; // Initialize RC_CONTROL to switch into RC_CONTROL
+bool AUTON_CONTROL = true; // Initialize AUTON_CONTROL boolean variable to FALSE
 
 #define RC_TOGGLE 0 // Initialize RC_TOGGLE check (1 == Check for remote control, 0 == Don't check for remote control)
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -144,11 +147,14 @@ bool ALTERNATE_BACK = false; // Initialize alternate back collision response
 // Structural Timer Variables
 elapsedMillis LS_TIMER; // Declare elapsedMillis timer object
 #define LS_DELAY 5 // Initialize length of LS_TIMER
+
 elapsedMillis US_TIMER; // Declare elapsedMillis timer object
 #define US_DELAY 20 // Initialize length of US_TIMER
 volatile unsigned long PING_TIMER; // Non-blocking microsecond timer to send ultrasonic pings
+
 elapsedMillis COM_TIMER; // Declare elapsedMillis timer object
 #define COM_DELAY 20 // Initialize length of COM_TIMER
+
 elapsedMillis GPS_TIMER; // Declare elapsedMillis timer object
 #define GPS_DELAY 1000 // Initialize length of GPS_TIMER
 

@@ -62,7 +62,7 @@ void CurrentCoordinates(){
 void CurrentHeading(){
   // Grab current heading of the rover from compass and update global variable CURRENT_HEADING
   COMPASS.read();
-  CURRENT_HEADING = COMPASS.heading() + 14; // Account for difference between Magnetic North and True North
+  CURRENT_HEADING = COMPASS.heading() + 13; // Account for difference between Magnetic North and True North
   if(CURRENT_HEADING >= 360){ // If above correction creates an angle > 360
     CURRENT_HEADING = fmod(CURRENT_HEADING, 360); // Flip over 360/0 boundary
   }
@@ -108,8 +108,8 @@ void GPSUpdate(){
 void TurningAngle(double target_heading){ // Function to determine ANGLE_TURN from CURRENT_HEADING & TARGET_HEADING
   
   double angle_provisional = target_heading - CURRENT_HEADING; // Take the difference of target heading and current heading
-
-  // Make changes to the angle so that it is always within -180 & 180
+  
+   // Make changes to the angle so that it is always within -180 & 180
   if (angle_provisional <= 180 && angle_provisional> -180){ // If angle is within -180 & 180, leave it
       ANGLE_TURN = angle_provisional;
   }
@@ -180,16 +180,39 @@ void HeadingHold(int motor_speed){
   ESC_MOTOR.write(motor_speed); // Drive forward at speed set by motor_speed      
   
   int temp_turn_angle = (int)(ANGLE_TURN); // Cast ANGLE_TURN to int
+
+  if (COMPASS_PID)
+  {
+    // Porportional
+    COMPASS_ERROR = ANGLE_TURN;
+    
+    // Derivative
+    COMPASS_DERIVATIVE = COMPASS_ERROR - COMPASS_prevERROR;
+
+    // Integral
+    if (abs(COMPASS_ERROR) < CINTEGRAL_BOUND)
+    {
+      COMPASS_TOTAL_ERROR = 0;
+    }
+    else
+    {
+      COMPASS_TOTAL_ERROR += COMPASS_ERROR;
+      if(COMPASS_TOTAL_ERROR > 180){
+        COMPASS_TOTAL_ERROR = 180;
+      }
+      else if(COMPASS_TOTAL_ERROR < -180){
+        COMPASS_TOTAL_ERROR = -180;
+      }
+    }
+
+    temp_turn_angle = (COMPASS_ERROR * cp) + (COMPASS_DERIVATIVE * cd) + (COMPASS_TOTAL_ERROR * ci);
+    COMPASS_LOCK = temp_turn_angle;
+    temp_turn_angle = constrain(temp_turn_angle, -180, 180);
+    COMPASS_prevERROR = COMPASS_ERROR; // sets previous error to current error after correction
+  }
   
   temp_turn_angle = map(temp_turn_angle, -180, 180, 0, 180); // Map initial turn angle to servo values of 0-180
   temp_turn_angle = constrain(temp_turn_angle, 0, 180);
-
-  if(temp_turn_angle < 105 && temp_turn_angle > 90){
-    temp_turn_angle = temp_turn_angle + (temp_turn_angle - 90)*2;
-  }
-  else if(temp_turn_angle > 67 && temp_turn_angle < 90){
-    temp_turn_angle = temp_turn_angle - (90 - temp_turn_angle)*3;
-  }
 
   TURN_SERVO.write(temp_turn_angle); // Tell the rover to turn according to temp_turn_value
 
@@ -253,15 +276,7 @@ void GPSNavigation(){
     return; // Exit GPSNavigation()
   }
   else if(DISTANCE >= 1 && TURN_TO == 0){ // Drive slow to target until within 1 meter (Drives for ~6.5m)
-    if(CHECKPOINT == FAST_TRANSITION){
-      HeadingHold(HOLD_SPEED + 3); // HeadingHold(int ESC_MOTOR speed)
-    }
-    else if(CHECKPOINT == CONE_GRASS){ // Drive faster when expecting grass
-      HeadingHold(HOLD_SPEED + 3); // HeadingHold(int ESC_MOTOR speed)
-    }
-    else{
-      HeadingHold(HOLD_SPEED); // HeadingHold(int ESC_MOTOR speed)
-    }
+    HeadingHold(HOLD_SPEED);
 
     EMERGENCY_CHECK = 1; // Do not restart timer
     NEW_STEP = 3; // Increment which step the rover is on
@@ -273,88 +288,12 @@ void GPSNavigation(){
     
     return; // Exit GPSNavigation()
   }
-  else if(DISTANCE < 1 && (CHECKPOINT == CONE || CHECKPOINT == CONE_GRASS)){ // At a cone, search for cone and attempt to hit within 30 seconds
-    // CANNOT ACCESS ULTRASONICS ONCE HERE
+  else if(DISTANCE < 1 && CHECKPOINT == MANUAL){
+    // Stop rover
+    ESC_MOTOR.write(90);
+    TURN_SERVO.write(90);
     
-    ESC_MOTOR.write(90); // Stop drive motors 
-
-    STATE = SEARCH; // Reset Vision state
-
-    CONE_TIMER = millis(); // Start a timer for intermediate cone check
-    while(STATE != REST && millis() <= CONE_TIMER + (30*1000)){ // Run vision sensor until cone is hit or 60 seconds is up
-      if(CHECKPOINT == CONE_GRASS){
-        ALIGN_SPEED = 98;
-        PURSUIT_SPEED = 98;
-      }
-      else{
-        ALIGN_SPEED = 97;
-        PURSUIT_SPEED = 97;
-      }
-      TargetCone(STATE); // Search for cone and drive into it
-      if(digitalRead(REAR_LIMIT_SWITCH) == HIGH){
-        ForwardDiagonalLeft(); // End up diagonally forward to the left
-      }
-    }
-    
-    // Get away from cone before continuing on
-    TURN_SERVO.write(90); // Straighten wheels
-    ESC_MOTOR.write(90); // Stop drive motors 
-    delay(1000);
-    ESC_MOTOR.write(80); // Reverse slowly
-    delay(2000);
-    ESC_MOTOR.write(90); // Stop drive motors
-      
-    WAYPOINT++; // Go to the next waypoint  
-    UpdateTargetWaypoint(WAYPOINT); // Update target coordinates
-    GPSUpdate(); // Update DISTANCE and TARGET_HEADING
-    TURN_TO = 1; // Enter TurnToHeading() on next function call
-    EMERGENCY_CHECK = 0; // Restart timer
-    delay(1000); // Wait for 1 second before entering TurnToHeading()
-    
-    return; // Exit GPSNavigation()
-  }
-  else if(DISTANCE < 1 && CHECKPOINT == CONE_FINAL){ // At final cone, search endlessly
-    // CANNOT ACCESS ULTRASONICS ONCE HERE
-    
-    ESC_MOTOR.write(90); // Stop drive motors 
-
-    STATE = SEARCH; // Reset Vision state
-
-    CONE_TIMER = millis(); // Start a timer for intermediate cone check
-    while(STATE != REST && millis() <= CONE_TIMER + (30*1000)){ // Run vision sensor until cone is hit or 30 seconds is up
-      TargetCone(STATE); // Search for cone and drive into it
-      if(digitalRead(REAR_LIMIT_SWITCH) == HIGH){
-        ForwardDiagonalLeft(); // End up diagonally forward to the left  
-      }
-    }
-
-    if(STATE != REST){ // If final cone was not hit, backup and redo GPS navigation
-      TURN_SERVO.write(90);
-      ESC_MOTOR.write(80);
-      CurrentCoordinates(); // Update CURRENT_LAT and CURRENT_LONG
-      GPSUpdate(); // Update DISTANCE and TARGET_HEADING
-      delay(3000);
-      return;
-    }
-    else if(STATE == REST){ // If final cone was hit, set rover to idle state and record time to completion
-      
-      ESC_MOTOR.write(90); // Stop drive motors 
-
-      COURSE_TIMER = millis() - STARTUP_TIMER; // Record time to complete the course
-      int seconds = (int)(COURSE_TIMER) / 1000; // Convert COURSE_TIMER from milliseconds to seconds
-      int minutes = seconds / 60; // Record number of minutes to complete the course
-      seconds = seconds % 60; // Record the remainder in seconds
-  
-      // Print the time to complete the course
-      Serial8.print("Course Completed. Total Trial Time = ");
-      Serial8.print(minutes);
-      Serial8.print(":");
-      Serial8.println(seconds);
-  
-      FINISHED = true; // Send rover to idle state
-
-      return; // Exit GPSNavigation()
-    }   
+    RC_CONTROL = true; // Switch to manual control after reaching this checkpoint
   }
   else if(DISTANCE < 1 && CHECKPOINT == TRANSITION){ // If at a transition point
     ESC_MOTOR.write(90); // Stop rover momentarily

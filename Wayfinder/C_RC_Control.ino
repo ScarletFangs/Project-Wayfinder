@@ -28,15 +28,15 @@ void DeadManSwitch() { // Auton|RC Control toggle function
   DEAD_MAN_VALUE = pulseIn(DEAD_MAN_PIN, HIGH); // Read value from RC buttons between ~2000 & ~1000
   
   if(DEAD_MAN_VALUE < 1100 && DEAD_MAN_VALUE > 900) { // If bottom button is pressed go to AUTON control
-    RC_CONTROL = false;
+    DEAD_MAN = false;
     AUTON_CONTROL = true;
   }
   else if(DEAD_MAN_VALUE < 2100 && DEAD_MAN_VALUE > 1900){ // If top button is pressed, use RC control
-    RC_CONTROL = true;
+    DEAD_MAN = true;
     AUTON_CONTROL = false;
   }
   else{
-    RC_CONTROL = false;
+    DEAD_MAN = false;
     AUTON_CONTROL = false;
   }
 }
