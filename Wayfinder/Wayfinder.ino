@@ -140,50 +140,50 @@ void loop(){
   while(!BEGIN_PROGRAM){
     SensorTimers(); // Update sensors on regular timing intervals
     if(digitalRead(REAR_LIMIT_SWITCH) == HIGH){
-      BEGIN_PROGRAM = true; 
-      TARGET_HEADING = 90;
-      TurningAngle(TARGET_HEADING);
+      BEGIN_PROGRAM = true; // Start program
     }
   }
-  
-  SensorTimers();
-  
-  
 
-//  #if RC_TOGGLE == 1 // If expecting to use remote control
-//  // Autonomous Navigation
-//  if(!RC_CONTROL){
-//    while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
-//      ESC_MOTOR.write(90);
-//      TURN_SERVO.write(90);
-//      DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
-//    }
-//    SensorTimers(); // Update sensors on regular timing intervals
-//  
-//    CollisionDetection(); // If a collision was detected, enter a collision response routine
-//  
-//    if(COLLISION_FINISHED){
-//      GPSNavigation(); // Main GPS navigational routine
-//    }
-//  }
-//  // Manual navigation
-//  else if(RC_CONTROL){
-//    RCDrive(); // Control rover through remote control
-//  }
-//  #elif RC_TOGGLE == 0 // If not expecting to use remote control
-//    while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
-//      ESC_MOTOR.write(90);
-//      TURN_SERVO.write(90);
-//      DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
-//    }
-//    SensorTimers(); // Update sensors on regular timing intervals
-//  
-//    CollisionDetection(); // If a collision was detected, enter a collision response routine
-//  
-//    if(COLLISION_FINISHED){
-//      GPSNavigation(); // Main GPS navigational routine
-//    }
-//  #endif
+  #if RC_TOGGLE == 0 // If not expecting to use remote control
+    while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
+      ESC_MOTOR.write(90);
+      TURN_SERVO.write(90);
+      DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
+    }
+    
+    HeadingHold(97);
+    
+    SensorTimers(); // Update sensors on regular timing intervals
+  
+    CollisionDetection(); // If a collision was detected, enter a collision response routine
+  
+    if(COLLISION_FINISHED){
+      HeadingHold(97);
+      SensorTimers(); // Update sensors on regular timing intervals
+      GPSNavigation(); // Main GPS navigational routine
+    }
+  #elif RC_TOGGLE == 1 // If expecting to use remote control
+    // Autonomous Navigation
+    if(!RC_CONTROL){
+      while(DEAD_MAN){ // Stop rover while DEAD_MAN is activated
+        ESC_MOTOR.write(90);
+        TURN_SERVO.write(90);
+        DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
+      }
+      SensorTimers(); // Update sensors on regular timing intervals
+    
+      CollisionDetection(); // If a collision was detected, enter a collision response routine
+    
+      if(COLLISION_FINISHED){
+        SensorTimers(); // Update sensors on regular timing intervals
+        GPSNavigation(); // Main GPS navigational routine
+      }
+    }
+    // Manual drive
+    else if(RC_CONTROL){
+      RCDrive(); // Control rover through remote control
+    }
+  #endif
 }
 /*----------------------------------------------------------------------------------------------------------------------*/ 
 void SensorTimers(){
@@ -204,12 +204,12 @@ void SensorTimers(){
     else{
       CURRENT_SENSOR++; // Go to next ultrasonic sensor
     }
-    
-//    Serial.print(DISTANCE_ARRAY[0]);
-//    Serial.print(" | ");
-//    Serial.print(DISTANCE_ARRAY[1]);
-//    Serial.print(" | ");
-//    Serial.println(DISTANCE_ARRAY[2]);
+
+    Serial.print(DISTANCE_ARRAY[0]);
+    Serial.print(" | ");
+    Serial.print(DISTANCE_ARRAY[1]);
+    Serial.print(" | ");
+    Serial.println(DISTANCE_ARRAY[2]);
 
   }
 
@@ -218,13 +218,12 @@ void SensorTimers(){
     COM_TIMER = 0; // Reset COM_TIMER
     CurrentHeading(); // Update CURRENT_HEADING
     TurningAngle(TARGET_HEADING); // Update ANGLE_TURN from CURRENT_HEADING & TARGET_HEADING
-    HeadingHold(98);
   }
 
   // Update CURRENT_LAT, CURRENT_LONG, DISTANCE every 1s
   if(GPS_TIMER > GPS_DELAY){
     GPS_TIMER = 0; // Reset GPS_TIMER
-    //CurrentCoordinates(); // Update current coordinates of the rover
-    //GPSUpdate(); // Update CURRENT_LAT & CURRENT_LONG
+    CurrentCoordinates(); // Update current coordinates of the rover
+    GPSUpdate(); // Update CURRENT_LAT & CURRENT_LONG
   }
 }

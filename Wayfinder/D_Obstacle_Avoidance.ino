@@ -8,8 +8,6 @@ void CollisionDetection(){
   
   // If a collision is detected...
   if(LIMIT_COLLISION_FRONT || ULTRASONIC_COLLISION){ // ... from the front
-//    Serial.println("Collision Detected");
-//    delay(2000);
     
     // Stop drive motors and straighten wheels
     ESC_MOTOR.write(90);
@@ -105,28 +103,44 @@ void LimitSwitchCollision(){
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic collision detection
 void UltrasonicCollision(){
-  long duration = 0;
+  unsigned long duration = 0;
+  unsigned long distance = 100;
   
   if(CURRENT_SENSOR == LEFT_US){
     digitalWrite(LEFT_TRIG, HIGH); // Send a ping out
     delayMicroseconds(10);
     digitalWrite(LEFT_TRIG, LOW);
-    duration = pulseIn(LEFT_ECHO, HIGH); // Duration of ping in ms --> returns 38ms if nothing detected
-    DISTANCE_ARRAY[CURRENT_SENSOR] = duration * 0.034 / 2; // Distance in cm
+    // Hardware interrupt with 38ms timeout
+    duration = pulseIn(LEFT_ECHO, HIGH, 38000); // Duration of ping in micros
+    distance = duration * 0.034 / 2; // Distance in cm
+    if(distance == 0 || distance >= 150){
+      distance = 150; // Ensure non-zero values
+    }
+    DISTANCE_ARRAY[CURRENT_SENSOR] = distance;
   }
   else if(CURRENT_SENSOR == CENTER_US){
     digitalWrite(CENTER_TRIG, HIGH); // Send a ping out
     delayMicroseconds(10);
     digitalWrite(CENTER_TRIG, LOW);
-    duration = pulseIn(CENTER_ECHO, HIGH); // Duration of ping in ms --> returns 38ms if nothing detected
-    DISTANCE_ARRAY[CURRENT_SENSOR] = duration * 0.034 / 2; // Distance in cm
+    // Hardware interrupt with 38ms timeout
+    duration = pulseIn(CENTER_ECHO, HIGH, 38000); // Duration of ping in micros
+    distance = duration * 0.034 / 2; // Distance in cm
+    if(distance == 0 || distance >= 150){
+      distance = 150; // Ensure non-zero values
+    }
+    DISTANCE_ARRAY[CURRENT_SENSOR] = distance;
   }
   else if(CURRENT_SENSOR == RIGHT_US){
     digitalWrite(RIGHT_TRIG, HIGH); // Send a ping out
     delayMicroseconds(10);
     digitalWrite(RIGHT_TRIG, LOW);
-    duration = pulseIn(RIGHT_ECHO, HIGH); // Duration of ping in ms --> returns 38ms if nothing detected
-    DISTANCE_ARRAY[CURRENT_SENSOR] = duration * 0.034 / 2; // Distance in cm
+    // Hardware interrupt with 38ms timeout
+    duration = pulseIn(RIGHT_ECHO, HIGH, 38000); // Duration of ping in micros
+    distance = duration * 0.034 / 2; // Distance in cm
+    if(distance == 0 || distance >= 150){
+      distance = 150; // Ensure non-zero values
+    }
+    DISTANCE_ARRAY[CURRENT_SENSOR] = distance;
   }
 
   uint16_t min_distance = 500; // Set minimum distance check
@@ -139,8 +153,7 @@ void UltrasonicCollision(){
   }
   
   // Trigger CollisionResponse() if an ultrasonic detects an object close by
-  // REMOVED CENTER US CHECK, NEED TO ADD BACK LATER
-  if (DISTANCE_ARRAY[0] < OBS_DISTANCE || DISTANCE_ARRAY[2] < OBS_DISTANCE){ 
+  if (DISTANCE_ARRAY[0] < OBS_DISTANCE || DISTANCE_ARRAY[1] < OBS_DISTANCE - 20 ||DISTANCE_ARRAY[2] < OBS_DISTANCE){ 
     ULTRASONIC_COLLISION = true; 
   }
   else{
@@ -170,7 +183,6 @@ void ReverseDiagonalRight()
   else if (COLLISION_TIMER >= 5500) 
   {
     COLLISION_FINISHED = true;
-    TOTALDELAY = 0;
   }
 }
 
@@ -179,90 +191,69 @@ void ReverseDiagonalLeft()
   if (COLLISION_TIMER > 500 && COLLISION_TIMER < 2000){
     TURN_SERVO.write(0); // Turn wheels left
     ESC_MOTOR.write(80); // Reverse left
-    TOTALDELAY += DELAY500MS;
   }
   else if (COLLISION_TIMER > 2000 && COLLISION_TIMER < 2500){
-    TOTALDELAY += DELAY1500MS;
     TURN_SERVO.write(90);
   }
   else if (COLLISION_TIMER > 2500 && COLLISION_TIMER < 4000){
     TURN_SERVO.write(180);
-    TOTALDELAY += DELAY1500MS;
   }
   else if (COLLISION_TIMER > 4000 && COLLISION_TIMER < 4500){
     TURN_SERVO.write(90);
-    TOTALDELAY += DELAY500MS;
   }
   else if (COLLISION_TIMER > 4500 && COLLISION_TIMER < 5000){
-    ESC_MOTOR.write(90);
-    TOTALDELAY += DELAY500MS;  
+    ESC_MOTOR.write(90); 
   }
   else if (COLLISION_TIMER >= 5500)
   {
     COLLISION_FINISHED = true;
-    TOTALDELAY = 0;
   }
 }
 
 void ForwardDiagonalRight()
 {
-  if (COLLISION_TIMER > DELAY1500MS){
-  TURN_SERVO.write(90);
-  ESC_MOTOR.write(90);
-  TOTALDELAY += DELAY1500MS;
+  if (COLLISION_TIMER > 500 && COLLISION_TIMER < 2000){
+    TURN_SERVO.write(180); // Turn wheels left
+    ESC_MOTOR.write(100); // Reverse left
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-  TURN_SERVO.write(180);
-  ESC_MOTOR.write(100);
-  TOTALDELAY += DELAY1500MS;
+  else if (COLLISION_TIMER > 2000 && COLLISION_TIMER < 2500){
+    TURN_SERVO.write(90);
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-  TURN_SERVO.write(90);
-  TOTALDELAY += DELAY500MS;
+  else if (COLLISION_TIMER > 2500 && COLLISION_TIMER < 4000){
+    TURN_SERVO.write(0);
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-  TURN_SERVO.write(0);
-  TOTALDELAY += DELAY1500MS;
+  else if (COLLISION_TIMER > 4000 && COLLISION_TIMER < 4500){
+    TURN_SERVO.write(90);
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-  TURN_SERVO.write(90);
-  TOTALDELAY += DELAY500MS;
+  else if (COLLISION_TIMER > 4500 && COLLISION_TIMER < 5000){
+    ESC_MOTOR.write(90); 
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-  ESC_MOTOR.write(90);
-  TOTALDELAY += DELAY500MS;
-  }
-  else if (COLLISION_TIMER >= TOTALDELAY){
-  COLLISION_FINISHED = true;
-  TOTALDELAY = 0;
+  else if (COLLISION_TIMER >= 5500)
+  {
+    COLLISION_FINISHED = true;
   }
 }
 
 void ForwardDiagonalLeft()
 {
-  if (COLLISION_TIMER > TOTALDELAY){
-    TURN_SERVO.write(0);
-    ESC_MOTOR.write(100);
-    TOTALDELAY += DELAY1500MS;
+  if (COLLISION_TIMER > 500 && COLLISION_TIMER < 2000){
+    TURN_SERVO.write(0); // Turn wheels left
+    ESC_MOTOR.write(100); // Reverse left
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
+  else if (COLLISION_TIMER > 2000 && COLLISION_TIMER < 2500){
     TURN_SERVO.write(90);
-    TOTALDELAY += DELAY500MS;
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
+  else if (COLLISION_TIMER > 2500 && COLLISION_TIMER < 4000){
     TURN_SERVO.write(180);
-    TOTALDELAY += DELAY1500MS;
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
+  else if (COLLISION_TIMER > 4000 && COLLISION_TIMER < 4500){
     TURN_SERVO.write(90);
-    TOTALDELAY += DELAY500MS;
   }
-  else if (COLLISION_TIMER > TOTALDELAY){
-    ESC_MOTOR.write(90);
-    TOTALDELAY += DELAY500MS;
+  else if (COLLISION_TIMER > 4500 && COLLISION_TIMER < 5000){
+    ESC_MOTOR.write(90); 
   }
-  else if (COLLISION_TIMER >= TOTALDELAY){
+  else if (COLLISION_TIMER >= 5500)
+  {
     COLLISION_FINISHED = true;
-    TOTALDELAY  = 0;
   }
 }

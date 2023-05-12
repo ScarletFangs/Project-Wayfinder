@@ -4,8 +4,8 @@
 bool BEGIN_PROGRAM = false; // Initialize start check
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Debugging Variables (1 = turn on prints, 0 = turn off prints)
-#define DEBUG_MODE 0 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
-#define SERIAL_DEBUG 1 // Initialize serial monitor debugging condition
+#define DEBUG_MODE 1 // Initialize "debug mode" condition for setup (removes all blocking checks in setup)
+#define SERIAL_DEBUG 0 // Initialize serial monitor debugging condition
 #define BLUETOOTH_DEBUG 0 // Initialize Bluetooth debugging condition
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Collision Response Variables
@@ -26,16 +26,16 @@ const int FRONT = 5; // Initialize directionality call
 const int REAR = 6; // Initialize directionality call
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic variables
-#define LEFT_TRIG 16    // Trigger Pin of Left Ultrasonic Sensor to pin 16
-#define LEFT_ECHO 17    // Echo Pin of Left Ultrasonic Sensor to pin 17
+#define LEFT_TRIG 39    // Trigger Pin of Left Ultrasonic Sensor to pin 16
+#define LEFT_ECHO 38    // Echo Pin of Left Ultrasonic Sensor to pin 17
 #define LEFT_US 0       // Left US position
 
-#define CENTER_TRIG 36  // Trigger Pin of Center Ultrasonic Sensor to pin 36
-#define CENTER_ECHO 38  // Echo Pin of Center Ultrasonic Sensor to pin 38
+#define CENTER_TRIG 41  // Trigger Pin of Center Ultrasonic Sensor to pin 36
+#define CENTER_ECHO 40  // Echo Pin of Center Ultrasonic Sensor to pin 38
 #define CENTER_US 1     // Center US position
 
-#define RIGHT_TRIG 41   // Trigger Pin of Right Ultrasonic Sensor to pin 41
-#define RIGHT_ECHO 40   // Echo Pin of Right Ultrasonic Sensor to pin 40
+#define RIGHT_TRIG 16   // Trigger Pin of Right Ultrasonic Sensor to pin 41
+#define RIGHT_ECHO 17   // Echo Pin of Right Ultrasonic Sensor to pin 40
 #define RIGHT_US 2      // Right US position
 
 #define SONAR_NUM 3 // Number of ultrasonic sensors
@@ -43,7 +43,7 @@ const int REAR = 6; // Initialize directionality call
 unsigned int DISTANCE_ARRAY[SONAR_NUM] = {0, 0, 0}; // Where the ping distances are updated and check in UltrasonicCollision()
 uint8_t CURRENT_SENSOR = 0;         // Keeps track of which sensor is active
 unsigned int GLOBAL_MIN_SENSOR = 0; // Sensor with the smallest distance 0 = Right Sensor; 1 = Middle Sensor; 2 = Left Sensor 
-unsigned int OBS_DISTANCE = 10; // Minimum distance for ultra sonics to a avoid obstacle
+unsigned int OBS_DISTANCE = 30; // Minimum distance for ultra sonics to a avoid obstacle
 
 bool ULTRASONIC_COLLISION = false; // Initialize tracker for ultrasonic collision detection
 /*----------------------------------------------------------------------------------------------------------------------*/
@@ -71,6 +71,7 @@ const double CINTEGRAL_BOUND = 7.5;
 volatile double COMPASS_prevERROR = 0;
 volatile double COMPASS_TOTAL_ERROR = 0;
 volatile double COMPASS_LOCK = 0;
+// THE GOLDEN RATIO DO NOT TOUCH
 const double cp = 0.75;
 const double ci = 0.3;
 const double cd = 0.35;
