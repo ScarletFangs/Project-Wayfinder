@@ -26,8 +26,8 @@ const int FRONT = 5; // Initialize directionality call
 const int REAR = 6; // Initialize directionality call
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Ultrasonic variables
-#define LEFT_TRIG 39    // Trigger Pin of Left Ultrasonic Sensor to pin 16
-#define LEFT_ECHO 38    // Echo Pin of Left Ultrasonic Sensor to pin 17
+#define LEFT_TRIG 38    // Trigger Pin of Left Ultrasonic Sensor to pin 16
+#define LEFT_ECHO 36    // Echo Pin of Left Ultrasonic Sensor to pin 17
 #define LEFT_US 0       // Left US position
 
 #define CENTER_TRIG 41  // Trigger Pin of Center Ultrasonic Sensor to pin 36
@@ -44,6 +44,7 @@ unsigned int DISTANCE_ARRAY[SONAR_NUM] = {0, 0, 0}; // Where the ping distances 
 uint8_t CURRENT_SENSOR = 0;         // Keeps track of which sensor is active
 unsigned int GLOBAL_MIN_SENSOR = 0; // Sensor with the smallest distance 0 = Right Sensor; 1 = Middle Sensor; 2 = Left Sensor 
 unsigned int OBS_DISTANCE = 30; // Minimum distance for ultra sonics to a avoid obstacle
+unsigned int EOBS_DISTANCE = 50; // Minimum distance for early obstacle detection
 
 bool ULTRASONIC_COLLISION = false; // Initialize tracker for ultrasonic collision detection
 /*----------------------------------------------------------------------------------------------------------------------*/

@@ -40,14 +40,13 @@ void CurrentCoordinates(){
     
     if (temp_lat != 0){
       CURRENT_LAT = temp_lat; // update CURRENT_LAT only if given good data
+      // Convert latitude from "degree.minute" to "degree.decimal"
+      int degree_lat = (int)(CURRENT_LAT);
+      degree_lat = (double)(degree_lat);
+      double minute_lat = CURRENT_LAT - degree_lat;
+      double decimal_lat = minute_lat * 100 / 60;
+      CURRENT_LAT = degree_lat + decimal_lat;
     }
-    
-    // Convert latitude from "degree.minute" to "degree.decimal"
-    int degree_lat = (int)(CURRENT_LAT);
-    double minute_lat = CURRENT_LAT - degree_lat;
-    double decimal_lat = minute_lat * 100 / 60;
-    CURRENT_LAT = degree_lat + decimal_lat;
-    
     
     // Extract the longitude value and convert it to a float
     String long_string = input_string.substring(index2-11, index2);
@@ -62,13 +61,15 @@ void CurrentCoordinates(){
     
     if(temp_long  != 0){
       CURRENT_LONG = temp_long; // Update CURRENT_LONG only if given good data
+      // Convert longitude from "degree.minute" to "degree.decimal"
+      int degree_long = (int)(CURRENT_LONG);
+      degree_long = (double)(degree_long);
+      double minute_long = CURRENT_LONG - degree_long;
+      double decimal_long = minute_long * 100 / 60;
+      CURRENT_LONG = degree_long + decimal_long;
     }
     
-    // Convert longitude from "degree.minute" to "degree.decimal"
-    int degree_long = (int)(CURRENT_LONG);
-    double minute_long = CURRENT_LONG - degree_long;
-    double decimal_long = minute_long * 100 / 60;
-    CURRENT_LONG = degree_long + decimal_long;
+    
     
   }
 }

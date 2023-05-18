@@ -160,6 +160,38 @@ void UltrasonicCollision(){
     ULTRASONIC_COLLISION = false; // Do nothing otherwise
   }
 }
+// Early Obstacle Detection
+void ObstacleAvoidance(){
+  if (GLOBAL_MIN_SENSOR == RIGHT_US && DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] <= EOBS_DISTANCE){ //If the smallest distance reading is from the right sensor move to the left
+
+     while(DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] > EOBS_DISTANCE) {
+     TURN_SERVO.write(0);//turn left
+     ESC_MOTOR.write(95);//move forward
+
+     }
+
+} else if ( GLOBAL_MIN_SENSOR == LEFT_US && DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] <= EOBS_DISTANCE){//If the smallest distance reading is from the left sensor move to the right
+ 
+  while(DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] > EOBS_DISTANCE) {
+    TURN_SERVO.write(180);//turn right
+    ESC_MOTOR.write(95); //move forward
+
+  }
+
+} else if ( GLOBAL_MIN_SENSOR == CENTER_US && DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] <= EOBS_DISTANCE){ //If the smallest sensor is the middle sensor move forward
+
+     while(DISTANCE_ARRAY[GLOBAL_MIN_SENSOR] > EOBS_DISTANCE) {
+    //TURN_SERVO.write(180);//turn right
+    ESC_MOTOR.write(80); //move back
+
+  }
+
+} else{
+  ESC_MOTOR.write(90); // reverse
+  TURN_SERVO.write(90);//turn left
+ 
+  return;
+}
 /*----------------------------------------------------------------------------------------------------------------------*/
 // Collision Response Routines
 void ReverseDiagonalRight() 

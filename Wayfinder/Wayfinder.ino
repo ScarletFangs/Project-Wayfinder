@@ -151,17 +151,13 @@ void loop(){
       DeadManSwitch(); // Check for updates to DEAD_MAN & AUTON_CONTROL
     }
     
-    HeadingHold(97);
-    
-    SensorTimers(); // Update sensors on regular timing intervals
-  
+    SensorTimers(); // Update sensors on regular timing intervals 
     CollisionDetection(); // If a collision was detected, enter a collision response routine
   
     if(COLLISION_FINISHED){
-      HeadingHold(97);
-      SensorTimers(); // Update sensors on regular timing intervals
       GPSNavigation(); // Main GPS navigational routine
     }
+
   #elif RC_TOGGLE == 1 // If expecting to use remote control
     // Autonomous Navigation
     if(!RC_CONTROL){
